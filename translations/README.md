@@ -35,3 +35,6 @@ This directory contains instructions that you may follow if you are willing to h
 * `Recognition results`: This is the text for the title from the bottom-left frame of the GUI. I also translated it to "Identified song" in French because it sounded more natural.
 * `Recognize songs`: This is the text for the title from the top-left frame of the GUI.
 * For the command-line help, I used the indicative present time rather than infinitive (in terms of French grammar) to match the English present, because it sounded better.
+
+
+cargo run --release --no-default-features -F gui,ffmpeg,pulse,mpris
