@@ -250,7 +250,7 @@ msgid "Copy album"
 msgstr ""
 
 #: interface.glade.h:8 favorites_interface.glade.h:9
-msgid "Search on YouTube"
+msgid "Search on Spotify"
 msgstr ""
 
 #: interface.glade.h:9

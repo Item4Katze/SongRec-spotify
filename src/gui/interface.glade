@@ -188,7 +188,7 @@
     </child>
     <child>
       <object class="GtkImageMenuItem" id="search_on_youtube">
-        <property name="label" translatable="yes">Search on YouTube</property>
+        <property name="label" translatable="yes">Search on Spotify</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="image">youtube_icon_2</property>
@@ -544,7 +544,7 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
                                     </child>
                                     <child>
                                       <object class="GtkButton" id="youtube_button">
-                                        <property name="label" translatable="yes">Search on YouTube</property>
+                                        <property name="label" translatable="yes">Search on Spotify</property>
                                         <property name="height-request">0</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
