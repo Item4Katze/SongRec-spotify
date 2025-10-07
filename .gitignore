@@ -25,3 +25,4 @@ stage/
 parts/
 prime/
 *.snap
+.directory
