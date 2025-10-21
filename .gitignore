@@ -26,3 +26,4 @@ parts/
 prime/
 *.snap
 .directory
+sort
