@@ -273,7 +273,7 @@
         <property name="always-show-image">True</property>
         <property name="can-focus">False</property>
         <property name="image">youtube_icon_2</property>
-        <property name="label" translatable="yes">Search on YouTube</property>
+        <property name="label" translatable="yes">Search on Spotify</property>
         <property name="use-stock">False</property>
         <property name="visible">True</property>
       </object>

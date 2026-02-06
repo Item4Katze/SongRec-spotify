@@ -357,7 +357,7 @@ pub fn gui_main(recording: bool, input_file: Option<&str>, enable_mpris_cli: boo
                 let mut encoded_search_term = utf8_percent_encode(&song_record.song_name, NON_ALPHANUMERIC).to_string();
                 encoded_search_term = encoded_search_term.replace("%20", "+");
                 
-                let search_url = format!("https://www.youtube.com/results?search_query={}", encoded_search_term);
+                let search_url = format!("https://open.spotify.com/search/{}", encoded_search_term);
                 
                 gtk::show_uri(None, &search_url, gtk::get_current_event_time()).unwrap();
             }
@@ -641,7 +641,7 @@ pub fn gui_main(recording: bool, input_file: Option<&str>, enable_mpris_cli: boo
             encoded_search_term = utf8_percent_encode(&encoded_search_term, NON_ALPHANUMERIC).to_string();
             encoded_search_term = encoded_search_term.replace("%20", "+");
             
-            let search_url = format!("https://www.youtube.com/results?search_query={}", encoded_search_term);
+            let search_url = format!("https://open.spotify.com/search/{}", encoded_search_term);
             
             gtk::show_uri(None, &search_url, gtk::get_current_event_time()).unwrap();
             
