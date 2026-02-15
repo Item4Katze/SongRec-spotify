@@ -524,6 +524,7 @@
                         <child>
                           <object class="AdwSwitchRow" id="notification_setting">
                             <property name="action-name">win.notification-setting</property>
+                            <property name="subtitle" translatable="yes">Notify when a new song is recognized or network error is encountered</property>
                             <property name="title" translatable="yes">Show notifications</property>
                           </object>
                         </child>
@@ -551,7 +552,7 @@
                             <property name="climb-rate">1.0</property>
                             <property name="numeric">True</property>
                             <property name="snap-to-ticks">True</property>
-                            <property name="subtitle" translatable="yes">By default the last 12 seconds of music are fingerprinted and sent to Shazam</property>
+                            <property name="subtitle" translatable="yes">By default the last 12 seconds of music are fingerprinted and sent to Shazam. You may want to increase to fine-tune reliability</property>
                             <property name="title" translatable="yes">Shazam buffer size in seconds</property>
                             <property name="update-policy">if-valid</property>
                           </object>
@@ -577,6 +578,20 @@
                             <property name="update-policy">if-valid</property>
                           </object>
                         </child>
+                        <child>
+                          <object class="AdwSwitchRow" id="systray_setting">
+                            <property name="action-name">win.systray-setting</property>
+                            <property name="subtitle" translatable="yes">When closing the window, minimize to system tray using libayatana-appindicator instead of closing the app. Please note that you should increate the "request interval" setting when leaving SongRec running in the background to reduce your changes of getting rate-limited.</property>
+                            <property name="title" translatable="yes">Minimize to system tray</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwSwitchRow" id="no_dupes_setting">
+                            <property name="action-name">win.no-dupes-setting</property>
+                            <property name="subtitle" translatable="yes">Bump a song to the top of the history list and remove the former entry when the same song is detected multiple times</property>
+                            <property name="title" translatable="yes">No duplicates in history</property>
+                          </object>
+                        </child>
                       </object>
                     </child>
                   </object>
@@ -587,7 +602,7 @@
               </object>
             </property>
             <property name="tag">settings_tag</property>
-            <property name="title">Settings</property>
+            <property name="title" translatable="yes">Settings</property>
           </object>
         </child>
       </object>
@@ -740,7 +755,7 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
   <menu id="app_indicator_menu">
     <item>
       <attribute name="action">win.open-window</attribute>
-      <attribute name="label">Open SongRec</attribute>
+      <attribute name="label" translatable="yes">Open SongRec</attribute>
     </item>
   </menu>
 </interface>
