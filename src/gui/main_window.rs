@@ -82,6 +82,11 @@ impl App {
         Self::load_resources();
 
         gtk::init().unwrap();
+
+        if let Some(display) = gdk::Display::default() {
+            let icon_theme = gtk::IconTheme::for_display(&display);
+            icon_theme.add_resource_path("/re/fossplant/songrec/");
+        }
         glib::set_prgname(Some("re.fossplant.songrec"));
 
         let builder = gtk::Builder::new();
@@ -162,11 +167,6 @@ impl App {
             Some("re.fossplant.songrec"),
             gio::ApplicationFlags::HANDLES_OPEN,
         );
-
-        if let Some(display) = gdk::Display::default() {
-            let icon_theme = gtk::IconTheme::for_display(&display);
-            icon_theme.add_resource_path("/re/fossplant/songrec/");
-        }
 
         // => https://gtk-rs.org/gtk-rs-core/git/docs/gio/struct.Application.html
         // => https://gtk-rs.org/gtk-rs-core/git/docs/gio/prelude/trait.ApplicationExtManual.html#method.run
