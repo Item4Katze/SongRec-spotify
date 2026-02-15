@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-15 08:25+0100\n"
+"POT-Creation-Date: 2026-02-15 16:24+0100\n"
 "PO-Revision-Date: 2021-12-26 11:36+0100\n"
 "Last-Translator: Rafał Mikrut <qarminkrut@gmail.com>\n"
 "Language-Team: \n"
@@ -41,7 +41,7 @@ msgstr ""
 
 #: src/cli_main.rs:161 src/core/http_thread.rs:52 src/core/http_thread.rs:62
 #: src/core/http_thread.rs:75 src/core/http_thread.rs:118
-#: src/gui/main_window.rs:593
+#: src/gui/main_window.rs:596
 msgid "No match for this song"
 msgstr "Nie znaleziono piosenki"
 
@@ -163,12 +163,8 @@ msgid "Your IP has been rate-limited"
 msgstr ""
 
 #: src/core/microphone_thread.rs:63
-msgid "Microphone error:"
-msgstr "Błąd mikrofonu:"
-
-#: src/core/microphone_thread.rs:73
-msgid "Failed to get default input config"
-msgstr "Nie udało się uzyskać domyślnej konfiguracji urządzeń wejścia"
+msgid "Audio error:"
+msgstr ""
 
 #: src/fingerprinting/signature_format.rs:97
 msgid "Invalid sample rate in decoded Shazam packet"
@@ -184,23 +180,23 @@ msgstr ""
 "Nieprawidłowa częstotliwość próbkowania przekazana podczas kodowania pakietu "
 "Shazam"
 
-#: src/gui/main_window.rs:531 src/gui/main_window.rs:586
+#: src/gui/main_window.rs:530 src/gui/main_window.rs:589
 msgid "Unable to enable MPRIS support"
 msgstr ""
 
-#: src/gui/main_window.rs:642
+#: src/gui/main_window.rs:649
 msgid "Song recognized"
 msgstr "Utwór rozpoznany"
 
-#: src/gui/main_window.rs:782
+#: src/gui/main_window.rs:794
 msgid "Are you sure you want to wipe history?"
 msgstr ""
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_Yes"
 msgstr ""
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_No"
 msgstr ""
 
@@ -413,6 +409,12 @@ msgstr ""
 #: translations/interface.ui.h:46
 msgid "Open SongRec"
 msgstr ""
+
+#~ msgid "Microphone error:"
+#~ msgstr "Błąd mikrofonu:"
+
+#~ msgid "Failed to get default input config"
+#~ msgstr "Nie udało się uzyskać domyślnej konfiguracji urządzeń wejścia"
 
 #~ msgid "Application::new failed"
 #~ msgstr "Nie udało się uruchomić funkcji Application::new"

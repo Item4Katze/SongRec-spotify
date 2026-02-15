@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-15 08:25+0100\n"
+"POT-Creation-Date: 2026-02-15 16:24+0100\n"
 "PO-Revision-Date: 2026-02-14 21:10+0000\n"
 "Last-Translator: Fjuro <fjuro@users.noreply.weblate.fossplant.re>\n"
 "Language-Team: Czech <https://weblate.fossplant.re/projects/songrec/songrec/"
@@ -41,7 +41,7 @@ msgstr "Varování: síť není dostupná"
 
 #: src/cli_main.rs:161 src/core/http_thread.rs:52 src/core/http_thread.rs:62
 #: src/core/http_thread.rs:75 src/core/http_thread.rs:118
-#: src/gui/main_window.rs:593
+#: src/gui/main_window.rs:596
 msgid "No match for this song"
 msgstr "Nenalezena žádná shoda s touto skladbou"
 
@@ -169,12 +169,8 @@ msgid "Your IP has been rate-limited"
 msgstr ""
 
 #: src/core/microphone_thread.rs:63
-msgid "Microphone error:"
-msgstr "Chyba mikrofonu:"
-
-#: src/core/microphone_thread.rs:73
-msgid "Failed to get default input config"
-msgstr "Nepodařilo se získat výchozí konfiguraci vstupu"
+msgid "Audio error:"
+msgstr ""
 
 #: src/fingerprinting/signature_format.rs:97
 msgid "Invalid sample rate in decoded Shazam packet"
@@ -188,23 +184,23 @@ msgstr "Neplatný rozsah pásem v dekódovaném paketu Shazamu"
 msgid "Invalid sample rate passed when encoding Shazam packet"
 msgstr "Předána neplatná vzorkovací frekvence při kódování paketu Shazamu"
 
-#: src/gui/main_window.rs:531 src/gui/main_window.rs:586
+#: src/gui/main_window.rs:530 src/gui/main_window.rs:589
 msgid "Unable to enable MPRIS support"
 msgstr "Nepodařilo se povolit podporu MPRIS"
 
-#: src/gui/main_window.rs:642
+#: src/gui/main_window.rs:649
 msgid "Song recognized"
 msgstr "Skladba rozpoznána"
 
-#: src/gui/main_window.rs:782
+#: src/gui/main_window.rs:794
 msgid "Are you sure you want to wipe history?"
 msgstr "Opravdu chcete vymazat historii?"
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_Yes"
 msgstr "_Ano"
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_No"
 msgstr "_Ne"
 
@@ -417,6 +413,12 @@ msgstr "Odstranit z oblíbených"
 #: translations/interface.ui.h:46
 msgid "Open SongRec"
 msgstr ""
+
+#~ msgid "Microphone error:"
+#~ msgstr "Chyba mikrofonu:"
+
+#~ msgid "Failed to get default input config"
+#~ msgstr "Nepodařilo se získat výchozí konfiguraci vstupu"
 
 #~ msgid "Recognition Date"
 #~ msgstr "Datum rozpoznání"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-15 08:25+0100\n"
+"POT-Creation-Date: 2026-02-15 16:24+0100\n"
 "PO-Revision-Date: 2023-09-08 16:03+0200\n"
 "Last-Translator: Gianluca Boiano <morf3089@gmail.com>\n"
 "Language-Team: Albano Battistella  <albano_battistella@hotmail.com>\n"
@@ -42,7 +42,7 @@ msgstr "Avviso: rete irraggiungibile"
 
 #: src/cli_main.rs:161 src/core/http_thread.rs:52 src/core/http_thread.rs:62
 #: src/core/http_thread.rs:75 src/core/http_thread.rs:118
-#: src/gui/main_window.rs:593
+#: src/gui/main_window.rs:596
 msgid "No match for this song"
 msgstr "Nessuna corrispondenza per questo brano"
 
@@ -170,12 +170,8 @@ msgid "Your IP has been rate-limited"
 msgstr ""
 
 #: src/core/microphone_thread.rs:63
-msgid "Microphone error:"
-msgstr "Errore microfono:"
-
-#: src/core/microphone_thread.rs:73
-msgid "Failed to get default input config"
-msgstr "Impossibile ottenere la configurazione di input predefinita"
+msgid "Audio error:"
+msgstr ""
 
 #: src/fingerprinting/signature_format.rs:97
 msgid "Invalid sample rate in decoded Shazam packet"
@@ -192,23 +188,23 @@ msgstr ""
 "Frequenza di campionamento non valida passata durante la codifica del "
 "pacchetto Shazam"
 
-#: src/gui/main_window.rs:531 src/gui/main_window.rs:586
+#: src/gui/main_window.rs:530 src/gui/main_window.rs:589
 msgid "Unable to enable MPRIS support"
 msgstr "Impossibile abilitare il supporto MPRIS"
 
-#: src/gui/main_window.rs:642
+#: src/gui/main_window.rs:649
 msgid "Song recognized"
 msgstr "Brano riconosciuto"
 
-#: src/gui/main_window.rs:782
+#: src/gui/main_window.rs:794
 msgid "Are you sure you want to wipe history?"
 msgstr "Sei sicuro di voler cancellare la cronologia?"
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_Yes"
 msgstr "_Sì"
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_No"
 msgstr "_No"
 
@@ -421,6 +417,12 @@ msgstr "Riconosci da file"
 #: translations/interface.ui.h:46
 msgid "Open SongRec"
 msgstr ""
+
+#~ msgid "Microphone error:"
+#~ msgstr "Errore microfono:"
+
+#~ msgid "Failed to get default input config"
+#~ msgstr "Impossibile ottenere la configurazione di input predefinita"
 
 #~ msgid "Application::new failed"
 #~ msgstr "Application::new fallita"

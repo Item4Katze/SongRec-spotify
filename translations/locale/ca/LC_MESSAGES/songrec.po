@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-15 08:25+0100\n"
+"POT-Creation-Date: 2026-02-15 16:24+0100\n"
 "PO-Revision-Date: 2024-01-21 20:01+0100\n"
 "Last-Translator: Pau Giuli <pau@giuli.cat>\n"
 "Language-Team: \n"
@@ -40,7 +40,7 @@ msgstr "Avís: Xarxa no connectada"
 
 #: src/cli_main.rs:161 src/core/http_thread.rs:52 src/core/http_thread.rs:62
 #: src/core/http_thread.rs:75 src/core/http_thread.rs:118
-#: src/gui/main_window.rs:593
+#: src/gui/main_window.rs:596
 msgid "No match for this song"
 msgstr "No hi ha coincidències per aquesta cançó"
 
@@ -166,12 +166,8 @@ msgid "Your IP has been rate-limited"
 msgstr ""
 
 #: src/core/microphone_thread.rs:63
-msgid "Microphone error:"
-msgstr "Error de micròfon:"
-
-#: src/core/microphone_thread.rs:73
-msgid "Failed to get default input config"
-msgstr "Error en carregar la configuració de micròfon per defecte"
+msgid "Audio error:"
+msgstr ""
 
 #: src/fingerprinting/signature_format.rs:97
 msgid "Invalid sample rate in decoded Shazam packet"
@@ -185,23 +181,23 @@ msgstr "Banda de freqüència invàlida en el paquet Shazam descodificat"
 msgid "Invalid sample rate passed when encoding Shazam packet"
 msgstr "Freqüència de mostreig invàlida en codificar el paquet Shazam"
 
-#: src/gui/main_window.rs:531 src/gui/main_window.rs:586
+#: src/gui/main_window.rs:530 src/gui/main_window.rs:589
 msgid "Unable to enable MPRIS support"
 msgstr "No s'ha pogut activar el suport per MPRIS"
 
-#: src/gui/main_window.rs:642
+#: src/gui/main_window.rs:649
 msgid "Song recognized"
 msgstr "Cançó reconeguda"
 
-#: src/gui/main_window.rs:782
+#: src/gui/main_window.rs:794
 msgid "Are you sure you want to wipe history?"
 msgstr "Esteu segur que voleu esborrar l'historial?"
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_Yes"
 msgstr "_Sí"
 
-#: src/gui/main_window.rs:783
+#: src/gui/main_window.rs:795
 msgid "_No"
 msgstr "_No"
 
@@ -414,6 +410,12 @@ msgstr "Eliminar de preferits"
 #: translations/interface.ui.h:46
 msgid "Open SongRec"
 msgstr ""
+
+#~ msgid "Microphone error:"
+#~ msgstr "Error de micròfon:"
+
+#~ msgid "Failed to get default input config"
+#~ msgstr "Error en carregar la configuració de micròfon per defecte"
 
 #~ msgid "Application::new failed"
 #~ msgstr "Application::new ha fallat inesperadament"
