@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SongRec\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-14 23:12+0100\n"
+"POT-Creation-Date: 2026-02-15 08:25+0100\n"
 "PO-Revision-Date: 2022-07-24 13:29+0200\n"
 "Last-Translator: Ismael Ferreras Morezuelas <swyterzone+songrec@gmail.com>\n"
 "Language-Team: Swyter <swyterzone@gmail.com>\n"
@@ -18,37 +18,37 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.1\n"
 
-#: src/cli_main.rs:107
+#: src/cli_main.rs:119
 msgid "Exiting: audio device not found"
 msgstr "Saliendo: no se ha encontrado el dispositivo de sonido seleccionado"
 
-#: src/cli_main.rs:113
+#: src/cli_main.rs:125
 msgid "Exiting: no audio devices found!"
 msgstr "Saliendo: no se ha encontrado ningún dispositivo de sonido."
 
-#: src/cli_main.rs:118
+#: src/cli_main.rs:130
 msgid "Using device"
 msgstr "Utilizando el dispositivo"
 
-#: src/cli_main.rs:141
+#: src/cli_main.rs:153
 msgid "Error: Network unreachable"
 msgstr "Error: No parece haber conexión a Internet"
 
-#: src/cli_main.rs:144
+#: src/cli_main.rs:156
 msgid "Warning: Network unreachable"
 msgstr "Advertencia: No parece haber conexión a Internet"
 
-#: src/cli_main.rs:149 src/core/http_thread.rs:52 src/core/http_thread.rs:62
+#: src/cli_main.rs:161 src/core/http_thread.rs:52 src/core/http_thread.rs:62
 #: src/core/http_thread.rs:75 src/core/http_thread.rs:118
-#: src/gui/main_window.rs:558
+#: src/gui/main_window.rs:593
 msgid "No match for this song"
 msgstr "No se ha podido detectar la canción"
 
-#: src/cli_main.rs:150
+#: src/cli_main.rs:162
 msgid "Error:"
 msgstr "Error:"
 
-#: src/cli_main.rs:158
+#: src/cli_main.rs:170
 msgid "Recording started!"
 msgstr "Grabación en curso"
 
@@ -169,11 +169,11 @@ msgstr ""
 msgid "Your IP has been rate-limited"
 msgstr ""
 
-#: src/core/microphone_thread.rs:58
+#: src/core/microphone_thread.rs:63
 msgid "Microphone error:"
 msgstr "Hubo un problema con el micrófono:"
 
-#: src/core/microphone_thread.rs:68
+#: src/core/microphone_thread.rs:73
 msgid "Failed to get default input config"
 msgstr ""
 "Hubo un problema al obtener la configuración del dispositivo de entrada "
@@ -197,23 +197,23 @@ msgstr ""
 "La frecuencia de reproducción  proporcionada para codificar el paquete de "
 "Shazam no parece que sea correcta"
 
-#: src/gui/main_window.rs:496 src/gui/main_window.rs:551
+#: src/gui/main_window.rs:531 src/gui/main_window.rs:586
 msgid "Unable to enable MPRIS support"
 msgstr "No se ha podido activar la funcionalidad MPRIS"
 
-#: src/gui/main_window.rs:607
+#: src/gui/main_window.rs:642
 msgid "Song recognized"
 msgstr "Canción encontrada"
 
-#: src/gui/main_window.rs:747
+#: src/gui/main_window.rs:782
 msgid "Are you sure you want to wipe history?"
 msgstr "¿Estás segura de que quieres borrar la historia?"
 
-#: src/gui/main_window.rs:748
+#: src/gui/main_window.rs:783
 msgid "_Yes"
 msgstr "_Sí"
 
-#: src/gui/main_window.rs:748
+#: src/gui/main_window.rs:783
 msgid "_No"
 msgstr "_No"
 
@@ -326,12 +326,12 @@ msgid "General preferences"
 msgstr ""
 
 #: translations/interface.ui.h:24
-msgid "Show notifications"
-msgstr "Mostrar notificaciones"
+msgid "Notify when a new song is recognized or network error is encountered"
+msgstr ""
 
 #: translations/interface.ui.h:25
-msgid "Enable MPRIS"
-msgstr "Habilitar MPRIS"
+msgid "Show notifications"
+msgstr "Mostrar notificaciones"
 
 #: translations/interface.ui.h:26
 msgid ""
@@ -340,40 +340,92 @@ msgid ""
 msgstr ""
 
 #: translations/interface.ui.h:27
-msgid "About..."
-msgstr "Acerca de..."
+msgid "Enable MPRIS"
+msgstr "Habilitar MPRIS"
 
 #: translations/interface.ui.h:28
-msgid "Delete history"
-msgstr "Eliminar historial"
+msgid ""
+"By default the last 12 seconds of music are fingerprinted and sent to "
+"Shazam. You may want to increase to fine-tune reliability"
+msgstr ""
 
 #: translations/interface.ui.h:29
-msgid "Select a file to recognize"
-msgstr "Elige el archivo que quieres reconocer"
+msgid "Shazam buffer size in seconds"
+msgstr ""
 
 #: translations/interface.ui.h:30
-msgid "Copy artist and track"
-msgstr "Copiar el artista y el título de canción"
+msgid "By default 4, increase if you are rate-limited"
+msgstr ""
 
 #: translations/interface.ui.h:31
-msgid "Copy artist"
-msgstr "Copiar el artista"
+msgid "Shazam interval between requests in seconds"
+msgstr ""
 
 #: translations/interface.ui.h:32
-msgid "Copy track name"
-msgstr "Copiar el título de canción"
+msgid ""
+"When closing the window, minimize to system tray using libayatana-"
+"appindicator instead of closing the app. Please note that you should "
+"increate the \"request interval\" setting when leaving SongRec running in "
+"the background to reduce your changes of getting rate-limited."
+msgstr ""
 
 #: translations/interface.ui.h:33
-msgid "Copy album"
-msgstr "Copiar el álbum"
+msgid "Minimize to system tray"
+msgstr ""
 
 #: translations/interface.ui.h:34
-msgid "Add to Favorites"
+msgid ""
+"Bump a song to the top of the history list and remove the former entry when "
+"the same song is detected multiple times"
 msgstr ""
 
 #: translations/interface.ui.h:35
+msgid "No duplicates in history"
+msgstr ""
+
+#: translations/interface.ui.h:36
+msgid "Settings"
+msgstr ""
+
+#: translations/interface.ui.h:37
+msgid "About..."
+msgstr "Acerca de..."
+
+#: translations/interface.ui.h:38
+msgid "Delete history"
+msgstr "Eliminar historial"
+
+#: translations/interface.ui.h:39
+msgid "Select a file to recognize"
+msgstr "Elige el archivo que quieres reconocer"
+
+#: translations/interface.ui.h:40
+msgid "Copy artist and track"
+msgstr "Copiar el artista y el título de canción"
+
+#: translations/interface.ui.h:41
+msgid "Copy artist"
+msgstr "Copiar el artista"
+
+#: translations/interface.ui.h:42
+msgid "Copy track name"
+msgstr "Copiar el título de canción"
+
+#: translations/interface.ui.h:43
+msgid "Copy album"
+msgstr "Copiar el álbum"
+
+#: translations/interface.ui.h:44
+msgid "Add to Favorites"
+msgstr ""
+
+#: translations/interface.ui.h:45
 msgid "Remove from Favorites"
 msgstr "Quitar de favoritos"
+
+#: translations/interface.ui.h:46
+msgid "Open SongRec"
+msgstr ""
 
 #~ msgid "Application::new failed"
 #~ msgstr "Parece que «Application::new» ha fallado"

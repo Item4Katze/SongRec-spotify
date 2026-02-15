@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-14 23:12+0100\n"
+"POT-Creation-Date: 2026-02-15 08:25+0100\n"
 "PO-Revision-Date: 2021-08-23 21:02+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -18,37 +18,37 @@ msgstr ""
 "X-Generator: Poedit 2.3\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: src/cli_main.rs:107
+#: src/cli_main.rs:119
 msgid "Exiting: audio device not found"
 msgstr ""
 
-#: src/cli_main.rs:113
+#: src/cli_main.rs:125
 msgid "Exiting: no audio devices found!"
 msgstr ""
 
-#: src/cli_main.rs:118
+#: src/cli_main.rs:130
 msgid "Using device"
 msgstr ""
 
-#: src/cli_main.rs:141
+#: src/cli_main.rs:153
 msgid "Error: Network unreachable"
 msgstr ""
 
-#: src/cli_main.rs:144
+#: src/cli_main.rs:156
 msgid "Warning: Network unreachable"
 msgstr ""
 
-#: src/cli_main.rs:149 src/core/http_thread.rs:52 src/core/http_thread.rs:62
+#: src/cli_main.rs:161 src/core/http_thread.rs:52 src/core/http_thread.rs:62
 #: src/core/http_thread.rs:75 src/core/http_thread.rs:118
-#: src/gui/main_window.rs:558
+#: src/gui/main_window.rs:593
 msgid "No match for this song"
 msgstr "曲が認識されませんでした"
 
-#: src/cli_main.rs:150
+#: src/cli_main.rs:162
 msgid "Error:"
 msgstr ""
 
-#: src/cli_main.rs:158
+#: src/cli_main.rs:170
 msgid "Recording started!"
 msgstr ""
 
@@ -149,11 +149,11 @@ msgstr ""
 msgid "Your IP has been rate-limited"
 msgstr ""
 
-#: src/core/microphone_thread.rs:58
+#: src/core/microphone_thread.rs:63
 msgid "Microphone error:"
 msgstr "マイクエラー:"
 
-#: src/core/microphone_thread.rs:68
+#: src/core/microphone_thread.rs:73
 msgid "Failed to get default input config"
 msgstr "オーディオデバイスが利用できませんでした"
 
@@ -169,23 +169,23 @@ msgstr ""
 msgid "Invalid sample rate passed when encoding Shazam packet"
 msgstr ""
 
-#: src/gui/main_window.rs:496 src/gui/main_window.rs:551
+#: src/gui/main_window.rs:531 src/gui/main_window.rs:586
 msgid "Unable to enable MPRIS support"
 msgstr ""
 
-#: src/gui/main_window.rs:607
+#: src/gui/main_window.rs:642
 msgid "Song recognized"
 msgstr "曲が認識されました"
 
-#: src/gui/main_window.rs:747
+#: src/gui/main_window.rs:782
 msgid "Are you sure you want to wipe history?"
 msgstr ""
 
-#: src/gui/main_window.rs:748
+#: src/gui/main_window.rs:783
 msgid "_Yes"
 msgstr ""
 
-#: src/gui/main_window.rs:748
+#: src/gui/main_window.rs:783
 msgid "_No"
 msgstr ""
 
@@ -299,11 +299,11 @@ msgid "General preferences"
 msgstr ""
 
 #: translations/interface.ui.h:24
-msgid "Show notifications"
+msgid "Notify when a new song is recognized or network error is encountered"
 msgstr ""
 
 #: translations/interface.ui.h:25
-msgid "Enable MPRIS"
+msgid "Show notifications"
 msgstr ""
 
 #: translations/interface.ui.h:26
@@ -313,39 +313,91 @@ msgid ""
 msgstr ""
 
 #: translations/interface.ui.h:27
-msgid "About..."
+msgid "Enable MPRIS"
 msgstr ""
 
 #: translations/interface.ui.h:28
-msgid "Delete history"
+msgid ""
+"By default the last 12 seconds of music are fingerprinted and sent to "
+"Shazam. You may want to increase to fine-tune reliability"
 msgstr ""
 
 #: translations/interface.ui.h:29
-msgid "Select a file to recognize"
-msgstr "認識するファイルを選択"
+msgid "Shazam buffer size in seconds"
+msgstr ""
 
 #: translations/interface.ui.h:30
-msgid "Copy artist and track"
-msgstr "曲名とアーティスト名をコピー"
+msgid "By default 4, increase if you are rate-limited"
+msgstr ""
 
 #: translations/interface.ui.h:31
-msgid "Copy artist"
-msgstr "アーティスト名をコピー"
+msgid "Shazam interval between requests in seconds"
+msgstr ""
 
 #: translations/interface.ui.h:32
-msgid "Copy track name"
-msgstr "曲名をコピー"
+msgid ""
+"When closing the window, minimize to system tray using libayatana-"
+"appindicator instead of closing the app. Please note that you should "
+"increate the \"request interval\" setting when leaving SongRec running in "
+"the background to reduce your changes of getting rate-limited."
+msgstr ""
 
 #: translations/interface.ui.h:33
-msgid "Copy album"
-msgstr "アルバム名をコピー"
+msgid "Minimize to system tray"
+msgstr ""
 
 #: translations/interface.ui.h:34
-msgid "Add to Favorites"
+msgid ""
+"Bump a song to the top of the history list and remove the former entry when "
+"the same song is detected multiple times"
 msgstr ""
 
 #: translations/interface.ui.h:35
+msgid "No duplicates in history"
+msgstr ""
+
+#: translations/interface.ui.h:36
+msgid "Settings"
+msgstr ""
+
+#: translations/interface.ui.h:37
+msgid "About..."
+msgstr ""
+
+#: translations/interface.ui.h:38
+msgid "Delete history"
+msgstr ""
+
+#: translations/interface.ui.h:39
+msgid "Select a file to recognize"
+msgstr "認識するファイルを選択"
+
+#: translations/interface.ui.h:40
+msgid "Copy artist and track"
+msgstr "曲名とアーティスト名をコピー"
+
+#: translations/interface.ui.h:41
+msgid "Copy artist"
+msgstr "アーティスト名をコピー"
+
+#: translations/interface.ui.h:42
+msgid "Copy track name"
+msgstr "曲名をコピー"
+
+#: translations/interface.ui.h:43
+msgid "Copy album"
+msgstr "アルバム名をコピー"
+
+#: translations/interface.ui.h:44
+msgid "Add to Favorites"
+msgstr ""
+
+#: translations/interface.ui.h:45
 msgid "Remove from Favorites"
+msgstr ""
+
+#: translations/interface.ui.h:46
+msgid "Open SongRec"
 msgstr ""
 
 #~ msgid "Turn on speakers recognition"

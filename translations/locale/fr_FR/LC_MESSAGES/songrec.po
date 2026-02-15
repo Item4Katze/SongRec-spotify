@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-14 23:12+0100\n"
+"POT-Creation-Date: 2026-02-15 08:25+0100\n"
 "PO-Revision-Date: 2026-02-14 21:37+0000\n"
 "Last-Translator: \"Marin M.\" <nvram@users.noreply.weblate.fossplant.re>\n"
 "Language-Team: French <https://weblate.fossplant.re/projects/songrec/songrec/"
@@ -20,37 +20,37 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
 "X-Generator: Weblate 5.15.2\n"
 
-#: src/cli_main.rs:107
+#: src/cli_main.rs:119
 msgid "Exiting: audio device not found"
 msgstr "Fin de l'exécution : périphérique audio introvable"
 
-#: src/cli_main.rs:113
+#: src/cli_main.rs:125
 msgid "Exiting: no audio devices found!"
 msgstr "Fin de l'exécution : aucun périphérique audio disponible !"
 
-#: src/cli_main.rs:118
+#: src/cli_main.rs:130
 msgid "Using device"
 msgstr "Utilisation du périphérique"
 
-#: src/cli_main.rs:141
+#: src/cli_main.rs:153
 msgid "Error: Network unreachable"
 msgstr "Erreur : Pas de connexion réseau"
 
-#: src/cli_main.rs:144
+#: src/cli_main.rs:156
 msgid "Warning: Network unreachable"
 msgstr "Avertissement : Pas de connexion réseau"
 
-#: src/cli_main.rs:149 src/core/http_thread.rs:52 src/core/http_thread.rs:62
+#: src/cli_main.rs:161 src/core/http_thread.rs:52 src/core/http_thread.rs:62
 #: src/core/http_thread.rs:75 src/core/http_thread.rs:118
-#: src/gui/main_window.rs:558
+#: src/gui/main_window.rs:593
 msgid "No match for this song"
 msgstr "Chanson non reconnue"
 
-#: src/cli_main.rs:150
+#: src/cli_main.rs:162
 msgid "Error:"
 msgstr "Erreur :"
 
-#: src/cli_main.rs:158
+#: src/cli_main.rs:170
 msgid "Recording started!"
 msgstr "Enregistrement en cours..."
 
@@ -178,11 +178,11 @@ msgstr ""
 msgid "Your IP has been rate-limited"
 msgstr "Votre adresse IP fait l'objet d'une rate-limit"
 
-#: src/core/microphone_thread.rs:58
+#: src/core/microphone_thread.rs:63
 msgid "Microphone error:"
 msgstr "Erreur du microphone :"
 
-#: src/core/microphone_thread.rs:68
+#: src/core/microphone_thread.rs:73
 msgid "Failed to get default input config"
 msgstr "Impossible d'obtenir la configuration par défaut pour l'entrée audio"
 
@@ -200,23 +200,23 @@ msgstr ""
 "Fréquence d'échantillonnage invalide passée lors de l'encodage du paquet "
 "Shazam"
 
-#: src/gui/main_window.rs:496 src/gui/main_window.rs:551
+#: src/gui/main_window.rs:531 src/gui/main_window.rs:586
 msgid "Unable to enable MPRIS support"
 msgstr "Impossible d'activer le support de MRPIS"
 
-#: src/gui/main_window.rs:607
+#: src/gui/main_window.rs:642
 msgid "Song recognized"
 msgstr "Chanson identifiée"
 
-#: src/gui/main_window.rs:747
+#: src/gui/main_window.rs:782
 msgid "Are you sure you want to wipe history?"
 msgstr "Êtes-vous sûr⋅e de vouloir supprimer l'historique ?"
 
-#: src/gui/main_window.rs:748
+#: src/gui/main_window.rs:783
 msgid "_Yes"
 msgstr "_Oui"
 
-#: src/gui/main_window.rs:748
+#: src/gui/main_window.rs:783
 msgid "_No"
 msgstr "_Non"
 
@@ -331,12 +331,12 @@ msgid "General preferences"
 msgstr "Préférences générales"
 
 #: translations/interface.ui.h:24
-msgid "Show notifications"
-msgstr "Afficher les notifications"
+msgid "Notify when a new song is recognized or network error is encountered"
+msgstr ""
 
 #: translations/interface.ui.h:25
-msgid "Enable MPRIS"
-msgstr "Activer MPRIS"
+msgid "Show notifications"
+msgstr "Afficher les notifications"
 
 #: translations/interface.ui.h:26
 msgid ""
@@ -345,40 +345,92 @@ msgid ""
 msgstr ""
 
 #: translations/interface.ui.h:27
+msgid "Enable MPRIS"
+msgstr "Activer MPRIS"
+
+#: translations/interface.ui.h:28
+msgid ""
+"By default the last 12 seconds of music are fingerprinted and sent to "
+"Shazam. You may want to increase to fine-tune reliability"
+msgstr ""
+
+#: translations/interface.ui.h:29
+msgid "Shazam buffer size in seconds"
+msgstr ""
+
+#: translations/interface.ui.h:30
+msgid "By default 4, increase if you are rate-limited"
+msgstr ""
+
+#: translations/interface.ui.h:31
+msgid "Shazam interval between requests in seconds"
+msgstr ""
+
+#: translations/interface.ui.h:32
+msgid ""
+"When closing the window, minimize to system tray using libayatana-"
+"appindicator instead of closing the app. Please note that you should "
+"increate the \"request interval\" setting when leaving SongRec running in "
+"the background to reduce your changes of getting rate-limited."
+msgstr ""
+
+#: translations/interface.ui.h:33
+msgid "Minimize to system tray"
+msgstr ""
+
+#: translations/interface.ui.h:34
+msgid ""
+"Bump a song to the top of the history list and remove the former entry when "
+"the same song is detected multiple times"
+msgstr ""
+
+#: translations/interface.ui.h:35
+msgid "No duplicates in history"
+msgstr ""
+
+#: translations/interface.ui.h:36
+msgid "Settings"
+msgstr ""
+
+#: translations/interface.ui.h:37
 msgid "About..."
 msgstr "À propos..."
 
-#: translations/interface.ui.h:28
+#: translations/interface.ui.h:38
 msgid "Delete history"
 msgstr "Supprimer l'historique"
 
-#: translations/interface.ui.h:29
+#: translations/interface.ui.h:39
 msgid "Select a file to recognize"
 msgstr "Sélectionner un fichier à reconnaître"
 
-#: translations/interface.ui.h:30
+#: translations/interface.ui.h:40
 msgid "Copy artist and track"
 msgstr "Copier l'artiste et le morceau"
 
-#: translations/interface.ui.h:31
+#: translations/interface.ui.h:41
 msgid "Copy artist"
 msgstr "Copier l'artiste"
 
-#: translations/interface.ui.h:32
+#: translations/interface.ui.h:42
 msgid "Copy track name"
 msgstr "Copier le nom du morceau"
 
-#: translations/interface.ui.h:33
+#: translations/interface.ui.h:43
 msgid "Copy album"
 msgstr "Copier l'album"
 
-#: translations/interface.ui.h:34
+#: translations/interface.ui.h:44
 msgid "Add to Favorites"
 msgstr "Ajouter aux favoris"
 
-#: translations/interface.ui.h:35
+#: translations/interface.ui.h:45
 msgid "Remove from Favorites"
 msgstr "Supprimer des favoris"
+
+#: translations/interface.ui.h:46
+msgid "Open SongRec"
+msgstr ""
 
 #~ msgid "Application::new failed"
 #~ msgstr "Application::new n'a pas fonctionné"
