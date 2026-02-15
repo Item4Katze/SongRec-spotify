@@ -1,3 +1,9 @@
+songrec (0.6.2+1) bionic; urgency=low
+
+  * Prune .gitmodules out of the Debian build directory in order to avoid checksum issues
+
+ -- Marin <marin-m@users.noreply.github.com>  Sun, 15 Feb 2026 10:30:12 +0100
+
 songrec (0.6.2) bionic; urgency=low
 
   * Avoid stack overflow when compiling in debug mode on Linux
