@@ -13,6 +13,8 @@ use crate::utils::filesystem_operations::obtain_preferences_file_path;
 pub struct Preferences {
     pub enable_notifications: Option<bool>,
     pub enable_mpris: Option<bool>,
+    pub buffer_size_secs: Option<u64>,
+    pub request_interval_secs: Option<u64>,
     pub current_device_name: Option<String>,
 }
 
@@ -21,6 +23,8 @@ impl Preferences {
         Preferences {
             enable_notifications: None,
             enable_mpris: None,
+            buffer_size_secs: None,
+            request_interval_secs: None,
             current_device_name: None,
         }
     }
@@ -31,6 +35,8 @@ impl Default for Preferences {
         Preferences {
             enable_notifications: Some(true),
             enable_mpris: Some(false),
+            buffer_size_secs: Some(12),
+            request_interval_secs: Some(4),
             current_device_name: None,
         }
     }
@@ -38,7 +44,7 @@ impl Default for Preferences {
 
 #[derive(Clone, Debug)]
 pub struct PreferencesInterface {
-    preferences_file_path: Option<String>,
+    pub preferences_file_path: Option<String>,
     pub preferences: Preferences,
 }
 
@@ -85,6 +91,12 @@ impl PreferencesInterface {
             enable_mpris: update_preferences
                 .enable_mpris
                 .or(current_preferences.enable_mpris),
+            buffer_size_secs: update_preferences
+                .buffer_size_secs
+                .or(current_preferences.buffer_size_secs),
+            request_interval_secs: update_preferences
+                .request_interval_secs
+                .or(current_preferences.request_interval_secs),
             current_device_name: update_preferences
                 .current_device_name
                 .or(current_preferences.current_device_name),

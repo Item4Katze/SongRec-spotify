@@ -5,6 +5,7 @@ use log::{debug, error, info, trace};
 #[cfg(feature = "mpris")]
 use mpris_player::PlaybackStatus;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
 use std::error::Error;
 use std::rc::Rc;
@@ -49,7 +50,7 @@ pub fn gui_main(
 struct App {
     builder: gtk::Builder,
 
-    preferences_interface: Rc<RefCell<PreferencesInterface>>,
+    preferences_interface: Arc<Mutex<PreferencesInterface>>,
     song_history_interface: Rc<RefCell<RecognitionHistoryInterface>>,
     favorites_interface: Rc<RefCell<FavoritesInterface>>,
     old_preferences: Preferences,
@@ -120,7 +121,13 @@ impl App {
 
         let preferences_interface: PreferencesInterface = PreferencesInterface::new();
         let old_preferences: Preferences = preferences_interface.preferences.clone();
-        let preferences_interface = Rc::new(RefCell::new(preferences_interface));
+        let preferences_interface = Arc::new(Mutex::new(preferences_interface));
+
+        let buffer_size_value: gtk::Adjustment = builder.object("buffer_size_value").unwrap();
+        buffer_size_value.set_value(old_preferences.buffer_size_secs.unwrap() as f64);
+
+        let request_interval_value: gtk::Adjustment = builder.object("interval_value").unwrap();
+        request_interval_value.set_value(old_preferences.request_interval_secs.unwrap() as f64);
 
         App {
             builder,
@@ -410,7 +417,33 @@ impl App {
             None
         });
 
-        let builder = builder_shared.clone();
+        let gui_tx = gui_tx_shared.clone();
+
+        builder_scope.add_callback("buffer_size_changed", move |values| {
+            let adjustment = values[0].get::<gtk::Adjustment>().unwrap();
+            debug!("Buffer size set to: {}", adjustment.value());
+            let mut new_preference = Preferences::new();
+            new_preference.buffer_size_secs = Some(adjustment.value() as u64);
+            gui_tx
+                .send_blocking(GUIMessage::UpdatePreference(new_preference))
+                .unwrap();
+            None
+        });
+
+        let gui_tx = gui_tx_shared.clone();
+
+        builder_scope.add_callback("interval_changed", move |values| {
+            let adjustment = values[0].get::<gtk::Adjustment>().unwrap();
+            debug!("Request interval set to: {}", adjustment.value());
+            let mut new_preference = Preferences::new();
+            new_preference.request_interval_secs = Some(adjustment.value() as u64);
+            gui_tx
+                .send_blocking(GUIMessage::UpdatePreference(new_preference))
+                .unwrap();
+            None
+        });
+
+        let builder = builder_shared;
 
         builder_scope.add_callback("about_dialog_closed", move |_values| {
             let about_dialog: adw::AboutDialog = builder.object("about_dialog").unwrap();
@@ -434,8 +467,10 @@ impl App {
         let microphone_rx = self.microphone_rx.clone();
         let processing_tx = self.processing_tx.clone();
         let gui_tx = self.gui_tx.clone();
+        let preferences_interface = self.preferences_interface.clone();
         spawn_big_thread(move || {
-            microphone_thread(microphone_rx, processing_tx, gui_tx);
+            microphone_thread(microphone_rx, processing_tx, gui_tx,
+                preferences_interface);
         });
 
         let processing_rx = self.processing_rx.clone();
@@ -533,12 +568,12 @@ impl App {
                     match gui_message {
                         UpdatePreference(new_preference) => {
                             preferences_interface_ptr
-                                .borrow_mut()
+                                .lock().unwrap()
                                 .update(new_preference);
                             #[cfg(feature = "mpris")]
                             if mpris_obj.is_none() {
                                 let mpris_enabled =
-                                    preferences_interface_ptr.borrow().preferences.enable_mpris
+                                    preferences_interface_ptr.lock().unwrap().preferences.enable_mpris
                                         == Some(true);
 
                                 mpris_obj = {
@@ -571,7 +606,7 @@ impl App {
                             #[cfg(feature = "mpris")]
                             {
                                 let mpris_enabled =
-                                    preferences_interface_ptr.borrow().preferences.enable_mpris
+                                    preferences_interface_ptr.lock().unwrap().preferences.enable_mpris
                                         == Some(true);
 
                                 if mpris_enabled {
@@ -629,7 +664,7 @@ impl App {
                                 }
 
                                 #[cfg(feature = "mpris")]
-                                if preferences_interface_ptr.borrow().preferences.enable_mpris
+                                if preferences_interface_ptr.lock().unwrap().preferences.enable_mpris
                                     == Some(true)
                                 {
                                     mpris_obj
@@ -638,7 +673,7 @@ impl App {
                                 }
 
                                 if preferences_interface_ptr
-                                    .borrow()
+                                    .lock().unwrap()
                                     .preferences
                                     .enable_notifications
                                     == Some(true)
@@ -1004,12 +1039,12 @@ impl App {
 
         window.add_action_entries([
             action_show_about,
-            action_notification_setting,
             action_recognize_file,
             action_search_youtube,
             action_export_to_csv,
             action_export_favorites_to_csv,
             action_wipe_history,
+            action_notification_setting,
             action_close,
             action_show_menu,
         ]);

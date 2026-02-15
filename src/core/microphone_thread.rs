@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use crate::core::thread_messages::{MicrophoneMessage::*, *};
+use crate::gui::preferences::PreferencesInterface;
+
 use cpal::platform::Device;
 use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::FromSample;
@@ -8,10 +10,13 @@ use gettextrs::gettext;
 
 use crate::audio_controllers::audio_backend::get_any_backend;
 
+const MAX_BUFFER_SIZE: usize = 512;
+
 pub fn microphone_thread(
     microphone_rx: async_channel::Receiver<MicrophoneMessage>,
     processing_tx: async_channel::Sender<ProcessingMessage>,
     gui_tx: async_channel::Sender<GUIMessage>,
+    preferences_interface: Arc<Mutex<PreferencesInterface>>,
 ) {
     // Use the default host for working with audio devices.
 
@@ -70,12 +75,13 @@ pub fn microphone_thread(
                 let channels = config.channels();
                 let sample_rate = config.sample_rate().0;
 
-                let mut twelve_seconds_buffer: Vec<i16> = vec![0i16; 16000 * 12];
+                let mut twelve_seconds_buffer: Vec<i16> = vec![0i16; 16000 * MAX_BUFFER_SIZE];
                 let mut number_unprocessed_samples: usize = 0; // Sample count for the interval of doing Shazam recognition (every 4 seconds)
                 let mut number_unmeasured_samples: usize = 0; // Sample count for doing volume measurement (every 24th of second)
 
                 let processing_already_ongoing_2 = processing_already_ongoing.clone();
 
+                let preferences_interface = preferences_interface.clone();
                 stream = Some(match config.sample_format() {
                     cpal::SampleFormat::F32 => device
                         .build_input_stream(
@@ -91,6 +97,7 @@ pub fn microphone_thread(
                                     &mut number_unprocessed_samples,
                                     &mut number_unmeasured_samples,
                                     &processing_already_ongoing_2,
+                                    &preferences_interface,
                                 )
                             },
                             err_fn,
@@ -111,6 +118,7 @@ pub fn microphone_thread(
                                     &mut number_unprocessed_samples,
                                     &mut number_unmeasured_samples,
                                     &processing_already_ongoing_2,
+                                    &preferences_interface,
                                 )
                             },
                             err_fn,
@@ -131,6 +139,7 @@ pub fn microphone_thread(
                                     &mut number_unprocessed_samples,
                                     &mut number_unmeasured_samples,
                                     &processing_already_ongoing_2,
+                                    &preferences_interface,
                                 )
                             },
                             err_fn,
@@ -179,12 +188,13 @@ fn write_data<T, U>(
     number_unprocessed_samples: &mut usize,
     number_unmeasured_samples: &mut usize,
     processing_already_ongoing: &Arc<Mutex<bool>>,
+    preferences_interface: &Arc<Mutex<PreferencesInterface>>,
 ) where
     T: cpal::Sample + rodio::Sample,
     U: cpal::Sample,
     i16: FromSample<T>,
 {
-    // Reassemble data into a 12-samples buffer, and do recognition
+    // Reassemble data into a 12-second buffer, and do recognition
     // every 4 seconds if the queue to "processing_tx" is empty
 
     let input_buffer =
@@ -194,14 +204,22 @@ fn write_data<T, U>(
 
     let raw_pcm_samples: Vec<i16> = converted_file.collect();
 
-    if raw_pcm_samples.len() >= 16000 * 12 {
-        twelve_seconds_buffer[..16000 * 12]
-            .copy_from_slice(&raw_pcm_samples[raw_pcm_samples.len() - 16000 * 12..]);
+    let preferences = preferences_interface.lock().unwrap().preferences.clone();
+    let buffer_size_secs = preferences.buffer_size_secs.unwrap() as usize;
+    let request_interval_secs = preferences.request_interval_secs.unwrap() as usize;
+
+    let twelve_seconds_buffer = &mut twelve_seconds_buffer[..16000 * buffer_size_secs];
+
+    // Update our buffer with data from CPAL
+
+    if raw_pcm_samples.len() >= 16000 * buffer_size_secs {
+        twelve_seconds_buffer
+            .copy_from_slice(&raw_pcm_samples[raw_pcm_samples.len() - 16000 * buffer_size_secs..]);
     } else {
         let latter_data = twelve_seconds_buffer[raw_pcm_samples.len()..].to_vec();
 
-        twelve_seconds_buffer[..16000 * 12 - raw_pcm_samples.len()].copy_from_slice(&latter_data);
-        twelve_seconds_buffer[16000 * 12 - raw_pcm_samples.len()..]
+        twelve_seconds_buffer[..16000 * buffer_size_secs - raw_pcm_samples.len()].copy_from_slice(&latter_data);
+        twelve_seconds_buffer[16000 * buffer_size_secs - raw_pcm_samples.len()..]
             .copy_from_slice(&raw_pcm_samples);
     }
 
@@ -209,7 +227,7 @@ fn write_data<T, U>(
 
     let mut processing_already_ongoing_borrow = processing_already_ongoing.lock().unwrap();
 
-    if *number_unprocessed_samples >= 16000 * 4 && *processing_already_ongoing_borrow == false {
+    if *number_unprocessed_samples >= 16000 * request_interval_secs && *processing_already_ongoing_borrow == false {
         processing_tx
             .send_blocking(ProcessingMessage::ProcessAudioSamples(Box::new(
                 twelve_seconds_buffer.to_vec(),
@@ -229,7 +247,7 @@ fn write_data<T, U>(
     if *number_unmeasured_samples >= 16000 / 24 {
         let mut max_s16le_amplitude = 1;
 
-        for index in 16000 * 12 - 16000 / 100 * 2..16000 * 12 {
+        for index in 16000 * buffer_size_secs - 16000 / 100 * 2..16000 * buffer_size_secs {
             if twelve_seconds_buffer[index] > max_s16le_amplitude {
                 max_s16le_amplitude = twelve_seconds_buffer[index];
             }
