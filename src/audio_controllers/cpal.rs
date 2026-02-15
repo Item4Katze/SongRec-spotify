@@ -11,7 +11,7 @@ impl AudioBackend for CpalBackend {
         let mut device_names: Vec<DeviceListItem> = vec![];
 
         for device in host.input_devices().unwrap() {
-            let device_name = device.name().unwrap();
+            let device_name = device.id().unwrap().to_string();
 
             // Selecting the "upmix" or "vdownmix" input
             // source on an ALSA-based configuration may
@@ -36,7 +36,7 @@ impl AudioBackend for CpalBackend {
         let mut device: cpal::Device = host.default_input_device().unwrap();
 
         for possible_device in host.input_devices().unwrap() {
-            if possible_device.name().unwrap() == inner_name {
+            if possible_device.id().unwrap().to_string() == inner_name {
                 device = possible_device;
                 break;
             }

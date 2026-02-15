@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::error::Error;
-use std::sync::{Arc, Mutex};
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use chrono::Local;
 use gettextrs::gettext;
@@ -47,18 +47,18 @@ pub fn cli_main(parameters: CLIParameters) -> Result<(), Box<dyn Error>> {
     let processing_tx_2 = processing_tx.clone();
     let microphone_tx_2 = microphone_tx.clone();
 
-    let preferences_interface = Arc::new(
-        Mutex::new(
-            PreferencesInterface {
-                preferences_file_path: None,
-                preferences: Preferences::default()
-            }
-        )
-    );
+    let preferences_interface = Arc::new(Mutex::new(PreferencesInterface {
+        preferences_file_path: None,
+        preferences: Preferences::default(),
+    }));
 
     spawn_big_thread(move || {
-        microphone_thread(microphone_rx, processing_tx_2, gui_tx_2,
-            preferences_interface);
+        microphone_thread(
+            microphone_rx,
+            processing_tx_2,
+            gui_tx_2,
+            preferences_interface,
+        );
     });
 
     spawn_big_thread(move || {

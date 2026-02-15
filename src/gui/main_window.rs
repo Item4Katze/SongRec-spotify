@@ -5,10 +5,10 @@ use log::{debug, error, info, trace};
 #[cfg(feature = "mpris")]
 use mpris_player::PlaybackStatus;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
 use std::error::Error;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use crate::core::http_thread::http_thread;
 use crate::core::logging::Logging;
@@ -469,8 +469,7 @@ impl App {
         let gui_tx = self.gui_tx.clone();
         let preferences_interface = self.preferences_interface.clone();
         spawn_big_thread(move || {
-            microphone_thread(microphone_rx, processing_tx, gui_tx,
-                preferences_interface);
+            microphone_thread(microphone_rx, processing_tx, gui_tx, preferences_interface);
         });
 
         let processing_rx = self.processing_rx.clone();
@@ -568,13 +567,17 @@ impl App {
                     match gui_message {
                         UpdatePreference(new_preference) => {
                             preferences_interface_ptr
-                                .lock().unwrap()
+                                .lock()
+                                .unwrap()
                                 .update(new_preference);
                             #[cfg(feature = "mpris")]
                             if mpris_obj.is_none() {
-                                let mpris_enabled =
-                                    preferences_interface_ptr.lock().unwrap().preferences.enable_mpris
-                                        == Some(true);
+                                let mpris_enabled = preferences_interface_ptr
+                                    .lock()
+                                    .unwrap()
+                                    .preferences
+                                    .enable_mpris
+                                    == Some(true);
 
                                 mpris_obj = {
                                     let player = if enable_mpris_cli && mpris_enabled {
@@ -593,6 +596,7 @@ impl App {
                             if !(string == gettext("No match for this song")
                                 && (microphone_switch.is_active() || loopback_switch.is_active()))
                             {
+                                error!("Displaying error: {}", string);
                                 let dialog = gtk::AlertDialog::builder().message(&string).build();
                                 dialog.show(Some(&window));
                             }
@@ -605,9 +609,12 @@ impl App {
 
                             #[cfg(feature = "mpris")]
                             {
-                                let mpris_enabled =
-                                    preferences_interface_ptr.lock().unwrap().preferences.enable_mpris
-                                        == Some(true);
+                                let mpris_enabled = preferences_interface_ptr
+                                    .lock()
+                                    .unwrap()
+                                    .preferences
+                                    .enable_mpris
+                                    == Some(true);
 
                                 if mpris_enabled {
                                     let mpris_status = if network_is_reachable {
@@ -664,7 +671,11 @@ impl App {
                                 }
 
                                 #[cfg(feature = "mpris")]
-                                if preferences_interface_ptr.lock().unwrap().preferences.enable_mpris
+                                if preferences_interface_ptr
+                                    .lock()
+                                    .unwrap()
+                                    .preferences
+                                    .enable_mpris
                                     == Some(true)
                                 {
                                     mpris_obj
@@ -673,7 +684,8 @@ impl App {
                                 }
 
                                 if preferences_interface_ptr
-                                    .lock().unwrap()
+                                    .lock()
+                                    .unwrap()
                                     .preferences
                                     .enable_notifications
                                     == Some(true)

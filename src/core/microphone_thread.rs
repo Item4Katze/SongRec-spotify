@@ -56,24 +56,33 @@ pub fn microphone_thread(
                 let gui_tx_3 = gui_tx.clone();
                 let gui_tx_4 = gui_tx.clone();
 
-                let err_fn = move |error| {
+                let err_fn = move |error: Box<dyn std::error::Error>| {
                     gui_tx_2
                         .send_blocking(GUIMessage::ErrorMessage(format!(
                             "{} {}",
-                            gettext("Microphone error:"),
+                            gettext("Audio error:"),
                             error
                         )))
                         .unwrap();
                 };
 
+                let err_fn_2 = err_fn.clone();
+                let err_fn_3 = err_fn.clone();
+                let err_fn_cb = move |error: cpal::StreamError| {
+                    err_fn_2(Box::new(error));
+                };
+
                 let device: Device = backend.set_device(&host, &device_name);
 
-                let config = device
-                    .default_input_config()
-                    .expect(&gettext("Failed to get default input config"));
-
+                let config = match device.default_input_config() {
+                    Ok(res) => res,
+                    Err(err) => {
+                        err_fn_3(Box::new(err));
+                        return;
+                    }
+                };
                 let channels = config.channels();
-                let sample_rate = config.sample_rate().0;
+                let sample_rate = config.sample_rate();
 
                 let mut twelve_seconds_buffer: Vec<i16> = vec![0i16; 16000 * MAX_BUFFER_SIZE];
                 let mut number_unprocessed_samples: usize = 0; // Sample count for the interval of doing Shazam recognition (every 4 seconds)
@@ -83,69 +92,81 @@ pub fn microphone_thread(
 
                 let preferences_interface = preferences_interface.clone();
                 stream = Some(match config.sample_format() {
-                    cpal::SampleFormat::F32 => device
-                        .build_input_stream(
-                            &config.into(),
-                            move |data, _: &_| {
-                                write_data::<f32, f32>(
-                                    data,
-                                    &processing_tx_2,
-                                    gui_tx_3.clone(),
-                                    channels,
-                                    sample_rate,
-                                    &mut twelve_seconds_buffer,
-                                    &mut number_unprocessed_samples,
-                                    &mut number_unmeasured_samples,
-                                    &processing_already_ongoing_2,
-                                    &preferences_interface,
-                                )
-                            },
-                            err_fn,
-                            None,
-                        )
-                        .unwrap(),
-                    cpal::SampleFormat::I16 => device
-                        .build_input_stream(
-                            &config.into(),
-                            move |data, _: &_| {
-                                write_data::<i16, i16>(
-                                    data,
-                                    &processing_tx_2,
-                                    gui_tx_3.clone(),
-                                    channels,
-                                    sample_rate,
-                                    &mut twelve_seconds_buffer,
-                                    &mut number_unprocessed_samples,
-                                    &mut number_unmeasured_samples,
-                                    &processing_already_ongoing_2,
-                                    &preferences_interface,
-                                )
-                            },
-                            err_fn,
-                            None,
-                        )
-                        .unwrap(),
-                    cpal::SampleFormat::U16 => device
-                        .build_input_stream(
-                            &config.into(),
-                            move |data, _: &_| {
-                                write_data::<u16, i16>(
-                                    data,
-                                    &processing_tx_2,
-                                    gui_tx_3.clone(),
-                                    channels,
-                                    sample_rate,
-                                    &mut twelve_seconds_buffer,
-                                    &mut number_unprocessed_samples,
-                                    &mut number_unmeasured_samples,
-                                    &processing_already_ongoing_2,
-                                    &preferences_interface,
-                                )
-                            },
-                            err_fn,
-                            None,
-                        )
-                        .unwrap(),
+                    cpal::SampleFormat::F32 => match device.build_input_stream(
+                        &config.into(),
+                        move |data, _: &_| {
+                            write_data::<f32, f32>(
+                                data,
+                                &processing_tx_2,
+                                gui_tx_3.clone(),
+                                channels,
+                                sample_rate,
+                                &mut twelve_seconds_buffer,
+                                &mut number_unprocessed_samples,
+                                &mut number_unmeasured_samples,
+                                &processing_already_ongoing_2,
+                                &preferences_interface,
+                            )
+                        },
+                        err_fn_cb,
+                        None,
+                    ) {
+                        Ok(res) => res,
+                        Err(err) => {
+                            err_fn_3(Box::new(err));
+                            return;
+                        }
+                    },
+                    cpal::SampleFormat::I16 => match device.build_input_stream(
+                        &config.into(),
+                        move |data, _: &_| {
+                            write_data::<i16, i16>(
+                                data,
+                                &processing_tx_2,
+                                gui_tx_3.clone(),
+                                channels,
+                                sample_rate,
+                                &mut twelve_seconds_buffer,
+                                &mut number_unprocessed_samples,
+                                &mut number_unmeasured_samples,
+                                &processing_already_ongoing_2,
+                                &preferences_interface,
+                            )
+                        },
+                        err_fn_cb,
+                        None,
+                    ) {
+                        Ok(res) => res,
+                        Err(err) => {
+                            err_fn_3(Box::new(err));
+                            return;
+                        }
+                    },
+                    cpal::SampleFormat::U16 => match device.build_input_stream(
+                        &config.into(),
+                        move |data, _: &_| {
+                            write_data::<u16, i16>(
+                                data,
+                                &processing_tx_2,
+                                gui_tx_3.clone(),
+                                channels,
+                                sample_rate,
+                                &mut twelve_seconds_buffer,
+                                &mut number_unprocessed_samples,
+                                &mut number_unmeasured_samples,
+                                &processing_already_ongoing_2,
+                                &preferences_interface,
+                            )
+                        },
+                        err_fn_cb,
+                        None,
+                    ) {
+                        Ok(res) => res,
+                        Err(err) => {
+                            err_fn_3(Box::new(err));
+                            return;
+                        }
+                    },
                     _ => unreachable!(),
                 });
 
@@ -218,7 +239,8 @@ fn write_data<T, U>(
     } else {
         let latter_data = twelve_seconds_buffer[raw_pcm_samples.len()..].to_vec();
 
-        twelve_seconds_buffer[..16000 * buffer_size_secs - raw_pcm_samples.len()].copy_from_slice(&latter_data);
+        twelve_seconds_buffer[..16000 * buffer_size_secs - raw_pcm_samples.len()]
+            .copy_from_slice(&latter_data);
         twelve_seconds_buffer[16000 * buffer_size_secs - raw_pcm_samples.len()..]
             .copy_from_slice(&raw_pcm_samples);
     }
@@ -227,7 +249,9 @@ fn write_data<T, U>(
 
     let mut processing_already_ongoing_borrow = processing_already_ongoing.lock().unwrap();
 
-    if *number_unprocessed_samples >= 16000 * request_interval_secs && *processing_already_ongoing_borrow == false {
+    if *number_unprocessed_samples >= 16000 * request_interval_secs
+        && *processing_already_ongoing_borrow == false
+    {
         processing_tx
             .send_blocking(ProcessingMessage::ProcessAudioSamples(Box::new(
                 twelve_seconds_buffer.to_vec(),
