@@ -20,6 +20,8 @@ Vcs-Browser: https://github.com/marin-m/SongRec
 Package: songrec
 Architecture: any
 Depends: libasound2,
+         pipewire-alsa,
+         pipewire-pulse,
          libpulse0,
          libc6,
          libdbus-1-3,
