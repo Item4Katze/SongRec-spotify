@@ -28,7 +28,7 @@ apps:
       - opengl
       - audio-record
       - audio-playback
-    slots: [dbus-svc]
+    slots: [dbus-svc, mpris]
 
 environment:
   ALWAYS_USE_PULSEAUDIO: '1'

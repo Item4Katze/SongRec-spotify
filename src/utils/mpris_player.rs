@@ -36,7 +36,10 @@ pub fn get_player() -> Option<Arc<MprisPlayer>> {
     panic::set_hook(Box::new(|_| {}));
     let player = panic::catch_unwind(|| {
         MprisPlayer::new(
-            "re.fossplant.songrec".to_string(),
+            match std::env::var("SNAP_NAME") {
+                Ok(_) => "songrec",
+                _ => "re.fossplant.songrec"
+            }.to_string(),
             "SongRec".to_string(),
             "re.fossplant.songrec.desktop".to_string(),
         )
