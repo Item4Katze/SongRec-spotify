@@ -197,6 +197,7 @@
                                       <object class="GListStore" id="audio_inputs_model"/>
                                     </property>
                                     <property name="title" translatable="yes">Device</property>
+                                    <property name="title-lines">1</property>
                                     <signal name="notify::selected-item" handler="input_device_switched"/>
                                   </object>
                                 </child>
