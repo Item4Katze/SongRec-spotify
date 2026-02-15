@@ -147,6 +147,20 @@ For the latter, you will then find the project's binary (that you will be able t
 
 Note: You may remove dependencies over GTK+, Pulseaudio/PipeWire's libpulse or DBus MPRIS through editing the `-F` flag passed to `cargo`.
 
+### Building the Snap package
+
+When building the Snap package locally, be sure to connect the `:audio-record` interface manually so that the application works:
+
+```bash
+git clone https://github.com/marin-m/songrec
+cd songrec
+snapcraft pack
+sudo snap remove --purge songrec
+sudo snap install --dangerous songrec_0.6.2_amd64.snap
+sudo snap connect songrec:audio-record :audio-record
+songrec
+```
+
 ## Sample usage
 
 Passing no arguments or using the `gui` subcommand will launch the GUI, and try to recognize audio real-time as soon as the application is launched:
