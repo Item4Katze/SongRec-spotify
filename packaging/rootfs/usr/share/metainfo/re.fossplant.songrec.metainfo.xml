@@ -58,6 +58,17 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.6.2" date="2026-02-15">
+      <description>
+        <p>Avoid stack overflow when compiling in debug mode on Linux</p>
+        <p>Add support building the GTK 4 nativaly for Ubuntu 24.04 LTS in addition to 25.04, 25.10 and Flatpak</p>
+        <p>Use a steel icon matching the recommended bounds for a Flathub icon</p>
+        <p>Synchronize Czech, Brazilian and French translations (thanks to @Fjuro and @marcelocripe)</p>
+        <p>Add copiable debug information in the About panel</p>
+        <p>Add UI settings for the amp.shazam buffer size and recognition interval (see issues #154, #164, #81)</p>
+        <p>Notify users about the rate limit status</p>
+      </description>
+    </release>
     <release version="0.6.1.1" date="2026-02-14">
       <description>
         <p>Use a flat-looking icon consistent with both the previous releases of SongRec and the GNOME UI guidelines</p>

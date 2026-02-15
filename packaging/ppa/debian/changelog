@@ -1,4 +1,16 @@
-songrec (0.6.1.1) bionic; urgency=low
+songrec (0.6.2) bionic; urgency=low
+
+  * Avoid stack overflow when compiling in debug mode on Linux
+  * Add support building the GTK 4 nativaly for Ubuntu 24.04 LTS in addition to 25.04, 25.10 and Flatpak
+  * Use a steel icon matching the recommended bounds for a Flathub icon
+  * Synchronize Czech, Brazilian and French translations (thanks to @Fjuro and @marcelocripe)
+  * Add copiable debug information in the About panel
+  * Add UI settings for the amp.shazam buffer size and recognition interval (see issues #154, #164, #81)
+  * Notify users about the rate limit status
+
+ -- Marin <marin-m@users.noreply.github.com>  Sun, 15 Feb 2026 09:56:47 +0100
+
+ssongrec (0.6.1.1) bionic; urgency=low
 
   * Use a flat-looking icon consistent with both the previous releases of
     SongRec and the GNOME UI guidelines
