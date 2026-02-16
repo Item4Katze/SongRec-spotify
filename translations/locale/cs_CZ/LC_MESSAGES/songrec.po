@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-15 16:24+0100\n"
+"POT-Creation-Date: 2026-02-16 13:38+0100\n"
 "PO-Revision-Date: 2026-02-16 12:02+0000\n"
 "Last-Translator: Fjuro <fjuro@users.noreply.weblate.fossplant.re>\n"
 "Language-Team: Czech <https://weblate.fossplant.re/projects/songrec/songrec/"
@@ -335,10 +335,8 @@ msgstr "Povolit MPRIS"
 #: translations/interface.ui.h:28
 msgid ""
 "By default the last 12 seconds of music are fingerprinted and sent to "
-"Shazam. You may want to increase to fine-tune reliability"
+"Shazam. Editing may have an impact on reliability"
 msgstr ""
-"Ve výchozím nastavení je zpracováno a odesláno Shazamu posledních 12 sekund "
-"hudby. Tuto hodnotu můžete zvýšit pro zlepšení spolehlivosti"
 
 #: translations/interface.ui.h:29
 msgid "Shazam buffer size in seconds"
@@ -417,6 +415,17 @@ msgstr "Odstranit z oblíbených"
 #: translations/interface.ui.h:46
 msgid "Open SongRec"
 msgstr ""
+
+#: translations/interface.ui.h:47
+msgid "Quit..."
+msgstr ""
+
+#~ msgid ""
+#~ "By default the last 12 seconds of music are fingerprinted and sent to "
+#~ "Shazam. You may want to increase to fine-tune reliability"
+#~ msgstr ""
+#~ "Ve výchozím nastavení je zpracováno a odesláno Shazamu posledních 12 "
+#~ "sekund hudby. Tuto hodnotu můžete zvýšit pro zlepšení spolehlivosti"
 
 #~ msgid "Microphone error:"
 #~ msgstr "Chyba mikrofonu:"

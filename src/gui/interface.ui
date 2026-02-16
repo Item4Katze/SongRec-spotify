@@ -553,7 +553,7 @@
                             <property name="climb-rate">1.0</property>
                             <property name="numeric">True</property>
                             <property name="snap-to-ticks">True</property>
-                            <property name="subtitle" translatable="yes">By default the last 12 seconds of music are fingerprinted and sent to Shazam. You may want to increase to fine-tune reliability</property>
+                            <property name="subtitle" translatable="yes">By default the last 12 seconds of music are fingerprinted and sent to Shazam. Editing may have an impact on reliability</property>
                             <property name="title" translatable="yes">Shazam buffer size in seconds</property>
                             <property name="update-policy">if-valid</property>
                           </object>
@@ -640,7 +640,7 @@
       <item>
         <attribute name="action">navigation.push</attribute>
         <attribute name="label">_Preferences...</attribute>
-        <attribute name="target">'settings_tag'</attribute>
+        <attribute name="target">settings_tag</attribute>
       </item>
     </section>
     <section>

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-15 16:24+0100\n"
+"POT-Creation-Date: 2026-02-16 13:38+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -313,7 +313,7 @@ msgstr ""
 #: translations/interface.ui.h:28
 msgid ""
 "By default the last 12 seconds of music are fingerprinted and sent to "
-"Shazam. You may want to increase to fine-tune reliability"
+"Shazam. Editing may have an impact on reliability"
 msgstr ""
 
 #: translations/interface.ui.h:29
@@ -392,4 +392,8 @@ msgstr ""
 
 #: translations/interface.ui.h:46
 msgid "Open SongRec"
+msgstr ""
+
+#: translations/interface.ui.h:47
+msgid "Quit..."
 msgstr ""
