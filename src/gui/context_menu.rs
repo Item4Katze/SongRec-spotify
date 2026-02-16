@@ -166,7 +166,7 @@ impl ContextMenuUtil {
                         encoded_search_term = encoded_search_term.replace("%20", "+");
 
                         let search_url = format!(
-                            "https://www.youtube.com/results?search_query={}",
+                            "https://open.spotify.com/search/{}",
                             encoded_search_term
                         );
 

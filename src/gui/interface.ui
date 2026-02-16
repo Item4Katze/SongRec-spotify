@@ -146,7 +146,7 @@
                                     <property name="activatable">True</property>
                                     <property name="activatable-widget">search_youtube_button</property>
                                     <property name="selectable">False</property>
-                                    <property name="title" translatable="yes">Search on YouTube</property>
+                                    <property name="title" translatable="yes">Search on Spotify</property>
                                     <child>
                                       <object class="GtkButton" id="search_youtube_button">
                                         <property name="action-name">win.search-youtube</property>
@@ -708,7 +708,7 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
       <item>
         <attribute name="action">history-menu.search-on-youtube</attribute>
         <attribute name="icon">category-search-symbolic</attribute>
-        <attribute name="label" translatable="yes">Search on YouTube</attribute>
+        <attribute name="label" translatable="yes">Search on Spotify</attribute>
       </item>
     </section>
     <section>
@@ -746,7 +746,7 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
       <item>
         <attribute name="action">history-menu.search-on-youtube</attribute>
         <attribute name="icon">search-symbolic</attribute>
-        <attribute name="label" translatable="yes">Search on YouTube</attribute>
+        <attribute name="label" translatable="yes">Search on Spotify</attribute>
       </item>
     </section>
     <section>
