@@ -640,7 +640,7 @@
       <item>
         <attribute name="action">navigation.push</attribute>
         <attribute name="label">_Preferences...</attribute>
-        <attribute name="target">settings_tag</attribute>
+        <attribute name="target">'settings_tag'</attribute>
       </item>
     </section>
     <section>
@@ -762,5 +762,60 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
       <attribute name="action">win.open-window</attribute>
       <attribute name="label" translatable="yes">Open SongRec</attribute>
     </item>
+    <item>
+      <attribute name="label" translatable="yes">Quit...</attribute>
+    </item>
   </menu>
+  <object class="GtkShortcutsWindow" id="shortcuts_window">
+    <property name="child">
+      <object class="GtkShortcutsSection">
+        <property name="title">shortcuts</property>
+        <child>
+          <object class="GtkShortcutsGroup">
+            <property name="title" translatable="yes" context="&quot;General&quot; section in the Shortcuts window">General</property>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="accelerator">&lt;Ctrl&gt;Q</property>
+                <property name="action-name">win.close</property>
+                <property name="title" translatable="yes" context="In the shortcuts window">Close the application</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="accelerator">&lt;Ctrl&gt;O</property>
+                <property name="action-name">win.recognize-file</property>
+                <property name="title" translatable="yes" context="In the shortcuts window">Recognize from a file</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="accelerator">&lt;Primary&gt;comma</property>
+                <property name="action-name">win.show-preferences</property>
+                <property name="title" translatable="yes" context="In the shortcuts window">Show preferences</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="accelerator">&lt;Primary&gt;question</property>
+                <property name="action-name">win.display-shortcuts</property>
+                <property name="title" translatable="yes" context="In the shortcuts window">Display shortcuts</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="accelerator">F10</property>
+                <property name="action-name">win.show-menu</property>
+                <property name="title" translatable="yes" context="win.show-menu">Show menu</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+    <property name="destroy-with-parent">True</property>
+    <property name="focus-visible">False</property>
+    <property name="hide-on-close">True</property>
+    <property name="modal">True</property>
+    <property name="transient-for">main_window</property>
+  </object>
 </interface>
