@@ -826,6 +826,7 @@ impl App {
         let about_dialog: adw::AboutDialog = self.builder.object("about_dialog").unwrap();
         let results_label: gtk::Label = self.builder.object("results_label").unwrap();
         let menu_button: gtk::MenuButton = self.builder.object("menu_button").unwrap();
+        let navigation_view: adw::NavigationView = self.builder.object("main_window_pages").unwrap();
         let recognize_file_row: adw::PreferencesRow =
             self.builder.object("recognize_file_row").unwrap();
         let spinner_row: adw::PreferencesRow = self.builder.object("spinner_row").unwrap();
@@ -1043,6 +1044,12 @@ impl App {
             })
             .build();
 
+        let action_show_preferences = gio::ActionEntry::builder("show-preferences")
+            .activate(move |_, _, _| {
+                navigation_view.push_by_tag("settings_tag");
+            })
+            .build();
+
         let action_show_menu = gio::ActionEntry::builder("show-menu")
             .activate(move |_, _, _| {
                 menu_button.activate();
@@ -1056,6 +1063,7 @@ impl App {
             action_export_to_csv,
             action_export_favorites_to_csv,
             action_wipe_history,
+            action_show_preferences,
             action_notification_setting,
             action_close,
             action_show_menu,
@@ -1067,6 +1075,8 @@ impl App {
         }
 
         application.set_accels_for_action("win.close", &["<Primary>Q", "<Primary>W"]);
+        application.set_accels_for_action("win.recognize-file", &["<Primary>O"]);
+        application.set_accels_for_action("win.show-preferences", &["<Primary>comma", "<Primary>P"]);
         application.set_accels_for_action("win.show-menu", &["F10"]);
     }
 
