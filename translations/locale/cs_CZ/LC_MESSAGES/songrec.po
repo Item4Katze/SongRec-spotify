@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-15 16:24+0100\n"
-"PO-Revision-Date: 2026-02-14 21:10+0000\n"
+"PO-Revision-Date: 2026-02-16 12:02+0000\n"
 "Last-Translator: Fjuro <fjuro@users.noreply.weblate.fossplant.re>\n"
 "Language-Team: Czech <https://weblate.fossplant.re/projects/songrec/songrec/"
 "cs/>\n"
@@ -166,11 +166,11 @@ msgstr ""
 
 #: src/core/http_thread.rs:129 src/fingerprinting/communication.rs:75
 msgid "Your IP has been rate-limited"
-msgstr ""
+msgstr "Vaše IP byla omezena"
 
 #: src/core/microphone_thread.rs:63
 msgid "Audio error:"
-msgstr ""
+msgstr "Chyba zvuku:"
 
 #: src/fingerprinting/signature_format.rs:97
 msgid "Invalid sample rate in decoded Shazam packet"
@@ -246,7 +246,7 @@ msgstr "Servery Shazamu nejsou dostupné, jste připojeni k síti?"
 
 #: translations/interface.ui.h:7
 msgid "ERROR: Your IP has been rate-limited"
-msgstr ""
+msgstr "CHYBA: Vaše IP byla omezena"
 
 #: translations/interface.ui.h:8
 msgid "Recognition results"
@@ -310,11 +310,11 @@ msgstr "Oblíbené"
 
 #: translations/interface.ui.h:23
 msgid "General preferences"
-msgstr ""
+msgstr "Obecné předvolby"
 
 #: translations/interface.ui.h:24
 msgid "Notify when a new song is recognized or network error is encountered"
-msgstr ""
+msgstr "Oznámit při rozpoznání nové skladby nebo objevení chyby"
 
 #: translations/interface.ui.h:25
 msgid "Show notifications"
@@ -325,6 +325,8 @@ msgid ""
 "MPRIS will display information about recognized songs in places like the "
 "GNOME or KDE control panel"
 msgstr ""
+"MPRIS zobrazí informace o rozpoznaných skladbách na místech, jako je "
+"ovládací panel GNOME nebo KDE"
 
 #: translations/interface.ui.h:27
 msgid "Enable MPRIS"
@@ -335,10 +337,12 @@ msgid ""
 "By default the last 12 seconds of music are fingerprinted and sent to "
 "Shazam. You may want to increase to fine-tune reliability"
 msgstr ""
+"Ve výchozím nastavení je zpracováno a odesláno Shazamu posledních 12 sekund "
+"hudby. Tuto hodnotu můžete zvýšit pro zlepšení spolehlivosti"
 
 #: translations/interface.ui.h:29
 msgid "Shazam buffer size in seconds"
-msgstr ""
+msgstr "Velikost mezipaměti pro Shazam v sekundách"
 
 #: translations/interface.ui.h:30
 msgid "By default 4, increase if you are rate-limited"
