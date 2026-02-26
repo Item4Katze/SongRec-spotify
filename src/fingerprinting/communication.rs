@@ -1,19 +1,21 @@
 use gettextrs::gettext;
+use glib::source::Priority;
 use rand::seq::SliceRandom;
-use reqwest::header::HeaderMap;
 use serde_json::{json, Value};
-use std::env;
+use soup::prelude::SessionExt;
 use std::error::Error;
-use std::time::Duration;
 use std::time::SystemTime;
 use uuid::Uuid;
 
 use crate::fingerprinting::signature_format::DecodedSignature;
 use crate::fingerprinting::user_agent::USER_AGENTS;
 
-pub fn recognize_song_from_signature(
+pub async fn recognize_song_from_signature(
+    session: &soup::Session,
     signature: &DecodedSignature,
 ) -> Result<Value, Box<dyn Error>> {
+    session.set_user_agent(USER_AGENTS.choose(&mut rand::thread_rng()).unwrap());
+
     let timestamp_ms = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)?
         .as_millis();
@@ -31,82 +33,55 @@ pub fn recognize_song_from_signature(
         },
         "timestamp": timestamp_ms as u32,
         "timezone": "Europe/Paris"
-    });
+    }).to_string();
 
     let uuid_1 = Uuid::new_v4().to_hyphenated().to_string().to_uppercase();
     let uuid_2 = Uuid::new_v4().to_hyphenated().to_string();
 
     let url = format!(
-        "https://amp.shazam.com/discovery/v5/en/US/android/-/tag/{}/{}",
+        "https://amp.shazam.com/discovery/v5/en/US/android/-/tag/{}/{}\
+?sync=true\
+&webv3=true\
+&sampling=true\
+&connected=\
+&shazamapiversion=v3\
+&sharehub=true\
+&video=v3",
         uuid_1, uuid_2
     );
 
-    let mut headers = HeaderMap::new();
+    let message = soup::Message::from_encoded_form("POST", &url, post_data.into())?;
 
-    headers.insert(
-        "User-Agent",
-        USER_AGENTS
-            .choose(&mut rand::thread_rng())
-            .unwrap()
-            .parse()?,
-    );
-    headers.insert("Content-Language", "en_US".parse()?);
+    let headers = message.request_headers().unwrap();
+    headers.append("Content-Language", "en_US");
+    headers.set_content_type(Some("application/json"), None);
 
-    let client = reqwest_client()?;
-    let response = client
-        .post(&url)
-        .timeout(Duration::from_secs(20))
-        .query(&[
-            ("sync", "true"),
-            ("webv3", "true"),
-            ("sampling", "true"),
-            ("connected", ""),
-            ("shazamapiversion", "v3"),
-            ("sharehub", "true"),
-            ("video", "v3"),
-        ])
-        .headers(headers)
-        .json(&post_data)
-        .send()?;
+    let response = session
+        .send_and_read_future(&message, Priority::DEFAULT)
+        .await?;
 
-    if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+    if message.status_code() == 429 {
         return Err(Box::new(std::io::Error::new(
             std::io::ErrorKind::QuotaExceeded,
             gettext("Your IP has been rate-limited").as_str(),
         )));
     }
 
-    Ok(response.json()?)
+    Ok(serde_json::from_slice(&response[..])?)
 }
 
-pub fn obtain_raw_cover_image(url: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut headers = HeaderMap::new();
+pub async fn obtain_raw_cover_image(
+    session: soup::Session,
+    url: &str,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    let message = soup::Message::new("GET", url)?;
+    session.set_user_agent(USER_AGENTS.choose(&mut rand::thread_rng()).unwrap());
+    let headers = message.request_headers().unwrap();
+    headers.append("Content-Language", "en_US");
 
-    headers.insert(
-        "User-Agent",
-        USER_AGENTS
-            .choose(&mut rand::thread_rng())
-            .unwrap()
-            .parse()?,
-    );
-    headers.insert("Content-Language", "en_US".parse()?);
+    let response = session
+        .send_and_read_future(&message, Priority::DEFAULT)
+        .await?;
 
-    let client = reqwest_client()?;
-    let response = client
-        .get(url)
-        .timeout(Duration::from_secs(20))
-        .headers(headers)
-        .send()?;
-
-    Ok(response.bytes()?.as_ref().to_vec())
-}
-
-fn reqwest_client() -> Result<reqwest::blocking::Client, Box<dyn Error>> {
-    let mut client = reqwest::blocking::Client::builder();
-    if let Ok(proxy) = env::var("https_proxy") {
-        client = client.proxy(reqwest::Proxy::https(&proxy)?);
-    } else if let Ok(proxy) = env::var("HTTPS_PROXY") {
-        client = client.proxy(reqwest::Proxy::https(&proxy)?);
-    };
-    Ok(client.build()?)
+    Ok(response[..].to_vec())
 }

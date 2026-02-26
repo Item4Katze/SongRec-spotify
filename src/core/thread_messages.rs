@@ -45,6 +45,8 @@ pub struct DeviceListItem {
 #[derive(Debug)]
 pub enum GUIMessage {
     ErrorMessage(String),
+    ShowWindow,
+    QuitApplication,
     // A list of audio devices, received from the microphone thread
     // because CPAL can't be called from the same thread as the GUI
     // under Windows
@@ -64,6 +66,7 @@ pub enum GUIMessage {
 
 pub enum MicrophoneMessage {
     MicrophoneRecordStart(String), // The argument is the audio device name
+    RefreshDevices,
     MicrophoneRecordStop,
     ProcessingDone,
 }

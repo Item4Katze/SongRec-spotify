@@ -20,12 +20,12 @@ pub fn processing_thread(
         match signature {
             Ok(signature) => {
                 http_tx
-                    .send_blocking(HTTPMessage::RecognizeSignature(Box::new(signature)))
+                    .try_send(HTTPMessage::RecognizeSignature(Box::new(signature)))
                     .unwrap();
             }
             Err(error) => {
                 gui_tx
-                    .send_blocking(GUIMessage::ErrorMessage(error.to_string()))
+                    .try_send(GUIMessage::ErrorMessage(error.to_string()))
                     .unwrap();
             }
         };

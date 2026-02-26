@@ -33,7 +33,7 @@ impl Write for GUIDispatcher {
         #[cfg(feature = "gui")]
         if let Some(ref gui_tx) = *self.gui_tx.lock().unwrap() {
             gui_tx
-                .send_blocking(GUIMessage::AppendToLog(
+                .try_send(GUIMessage::AppendToLog(
                     String::from_utf8_lossy(buf).into_owned(),
                 ))
                 .unwrap();
@@ -106,7 +106,7 @@ impl Logging {
 
     #[cfg(feature = "gui")]
     pub fn connect_to_gui_logger(self, gui_tx: async_channel::Sender<GUIMessage>) {
-        self.gui_dispatcher.connect_to_gui_logger(gui_tx); // WIP uncomment this when the app launches
+        self.gui_dispatcher.connect_to_gui_logger(gui_tx);
     }
 
     pub fn bind_glib_logging() {

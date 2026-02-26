@@ -1,7 +1,6 @@
-// WIP:
-// The item that follows should be stored in a Gio.ListStore
+// The item that follows shall be stored in a Gio.ListStore
 // in remplacement in the (device_name_str, is_monitor) tuple
-// that we used in the former Rust code, and should be bound to
+// that we used in the former Rust code, and shall be bound to
 // the "audio_inputs" Adw.ComboRow from SongRec's new GTK-4 UI tuple
 
 // See:

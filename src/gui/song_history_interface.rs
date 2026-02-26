@@ -5,6 +5,7 @@ use crate::gui::history_entry::HistoryEntry;
 use crate::utils::csv_song_history::{HasSong, Song, SongHistoryRecord};
 use gettextrs::gettext;
 use gtk::prelude::*;
+use log::error;
 use std::collections::HashSet;
 use std::error::Error;
 
@@ -88,7 +89,7 @@ impl SongRecordInterface for RecognitionHistoryInterface {
         };
 
         if let Err(error_info) = interface.load() {
-            eprintln!(
+            error!(
                 "{} {}",
                 gettext("Error when reading the song history on the disk:"),
                 error_info
@@ -163,7 +164,7 @@ impl SongRecordInterface for FavoritesInterface {
         };
 
         if let Err(error_info) = interface.load() {
-            eprintln!(
+            error!(
                 "{} {}",
                 gettext("Error when reading the favorites on the disk:"),
                 error_info

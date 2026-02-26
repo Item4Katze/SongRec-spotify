@@ -49,10 +49,46 @@ impl HistoryEntry {
     pub fn get_song(&self) -> Song {
         Song {
             song_name: self.song_name(),
-            album: self.album(),
-            track_key: self.track_key(),
-            release_year: self.release_year(),
-            genre: self.genre(),
+            album: match self.album() {
+                Some(val) => {
+                    if &val == "" {
+                        None
+                    } else {
+                        Some(val)
+                    }
+                }
+                None => None,
+            },
+            track_key: match self.track_key() {
+                Some(val) => {
+                    if &val == "" {
+                        None
+                    } else {
+                        Some(val)
+                    }
+                }
+                None => None,
+            },
+            release_year: match self.release_year() {
+                Some(val) => {
+                    if &val == "" {
+                        None
+                    } else {
+                        Some(val)
+                    }
+                }
+                None => None,
+            },
+            genre: match self.genre() {
+                Some(val) => {
+                    if &val == "" {
+                        None
+                    } else {
+                        Some(val)
+                    }
+                }
+                None => None,
+            },
         }
     }
 }

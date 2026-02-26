@@ -5,6 +5,10 @@ This directory contains instructions that you may follow if you are willing to h
 1. Connect using your Github or Gitlab account at **https://weblate.fossplant.re/accounts/login/** (you can also register with an e-mail)
 2. Use the Weblate interface at https://weblate.fossplant.re/projects/songrec/songrec/
 
+You Github account should appear and be listed in the [contributors](https://github.com/marin-m/SongRec/graphs/contributors) if you use an e-mail you also use here.
+
+Alternatively and if you are easy with using git, you can also [clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository), edit the `.po` files in the `translations/locale/` folder using a tool such as [`poedit`](https://poedit.net/download) and [submit a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
+
 ## How to rebuild SongRec while taking in account your translation?
 
 1. Download a `.po` file for your translation using the Weblate interface, for this, go to your your language and select "Files > Download translation". You should obtain a `.po` files
@@ -23,12 +27,8 @@ This directory contains instructions that you may follow if you are willing to h
 
 ### Examples of tricky strings to translate
 
-* `Note: Could not parse TSV output from`: TSV is a data format, literally meaning "tab-separated values". This string is displayed just before a Linux command, displayed between quotes, that invokes a PulseAudio-related utility (you may precise that this is a command, etc.).
-* `Application::new failed`: This is the name of a function from the code (you may use something like "did not work").
 * `The data-URI Shazam fingerprint to recognize.`: Data-URI is a data format (you may precise that this is a format, etc.).
 * `Invalid sample rate in decoded Shazam packet`: "Sample rate", like "Frequency band", is a technical signal processing term that is used in unlikely errors. You may want to find an equivalent translation for your langage, if there has been academic or didactic work using it at all.
-* `Recognize from my speakers instead of microphone`: Don't make it extremely long, otherwise the interface may horizontally overflow (I limited to 62 characters for French).
-* `Failed to get default input config`: Unlikely error message. It's about obtaining the configuration regarding the default microphone of the system, when obtained with an audio system such as ALSA or PulseAudio.
 * The presence in `_` in a string (in `_Open` or `_Cancel`) means that there is an `Alt-` shortcut on the letter which is present after the underscore. This is a standard thing for GTK+-based programs.
 * `Song recognized`: This is the text from the GNOME notification when a song is recognized. I translated it to "Song identified" in French.
 * `Recognition results`: This is the text for the title from the bottom-left frame of the GUI. I also translated it to "Identified song" in French because it sounded more natural.

@@ -1,6 +1,7 @@
 use gettextrs::gettext;
 use regex::Regex;
 use serde_json::{to_string_pretty, Value};
+use soup::prelude::SessionExt;
 use std::error::Error;
 
 use crate::core::thread_messages::*;
@@ -8,10 +9,11 @@ use crate::core::thread_messages::*;
 use crate::fingerprinting::communication::{obtain_raw_cover_image, recognize_song_from_signature};
 use crate::fingerprinting::signature_format::DecodedSignature;
 
-fn try_recognize_song(
+async fn try_recognize_song(
+    session: &soup::Session,
     signature: DecodedSignature,
 ) -> Result<SongRecognizedMessage, Box<dyn Error>> {
-    let json_object = recognize_song_from_signature(&signature)?;
+    let json_object = recognize_song_from_signature(session, &signature).await?;
 
     let mut album_name: Option<String> = None;
     let mut release_year: Option<String> = None;
@@ -64,7 +66,7 @@ fn try_recognize_song(
             }
         },
         cover_image: match &json_object["track"]["images"]["coverart"] {
-            Value::String(string) => Some(obtain_raw_cover_image(string)?),
+            Value::String(string) => Some(obtain_raw_cover_image(session.clone(), string).await?),
             _ => None,
         },
         track_key: match &json_object["track"]["key"] {
@@ -94,53 +96,47 @@ fn try_recognize_song(
     })
 }
 
-pub fn http_thread(
+pub async fn http_task(
     http_rx: async_channel::Receiver<HTTPMessage>,
     gui_tx: async_channel::Sender<GUIMessage>,
     microphone_tx: async_channel::Sender<MicrophoneMessage>,
 ) {
-    while let Ok(message) = http_rx.recv_blocking() {
+    let session = soup::Session::new();
+    session.set_timeout(20);
+    session.set_idle_timeout(2);
+
+    while let Ok(message) = http_rx.recv().await {
+        // XX USE SOUP3 CF. https://github.com/marin-m/SongRec/issues/223
         match message {
             HTTPMessage::RecognizeSignature(signature) => {
-                match try_recognize_song(*signature) {
+                match try_recognize_song(&session, *signature).await {
                     Ok(recognized_song) => {
                         gui_tx
-                            .send_blocking(GUIMessage::SongRecognized(Box::new(recognized_song)))
+                            .try_send(GUIMessage::SongRecognized(Box::new(recognized_song)))
                             .unwrap();
-                        gui_tx
-                            .send_blocking(GUIMessage::NetworkStatus(true))
-                            .unwrap();
-                        gui_tx
-                            .send_blocking(GUIMessage::RateLimitState(false))
-                            .unwrap();
+                        gui_tx.try_send(GUIMessage::NetworkStatus(true)).unwrap();
+                        gui_tx.try_send(GUIMessage::RateLimitState(false)).unwrap();
                     }
                     Err(error) => match error.to_string().as_str() {
                         a if a == gettext("No match for this song") => {
                             gui_tx
-                                .send_blocking(GUIMessage::ErrorMessage(error.to_string()))
+                                .try_send(GUIMessage::ErrorMessage(error.to_string()))
                                 .unwrap();
-                            gui_tx
-                                .send_blocking(GUIMessage::NetworkStatus(true))
-                                .unwrap();
-                            gui_tx
-                                .send_blocking(GUIMessage::RateLimitState(false))
-                                .unwrap();
+                            gui_tx.try_send(GUIMessage::NetworkStatus(true)).unwrap();
+                            gui_tx.try_send(GUIMessage::RateLimitState(false)).unwrap();
                         }
                         a if a == gettext("Your IP has been rate-limited") => {
-                            gui_tx
-                                .send_blocking(GUIMessage::RateLimitState(true))
-                                .unwrap();
+                            gui_tx.try_send(GUIMessage::RateLimitState(true)).unwrap();
                         }
                         _ => {
-                            gui_tx
-                                .send_blocking(GUIMessage::NetworkStatus(false))
-                                .unwrap();
+                            log::error!("Network reach error: {:?}", error);
+                            gui_tx.try_send(GUIMessage::NetworkStatus(false)).unwrap();
                         }
                     },
                 };
 
                 microphone_tx
-                    .send_blocking(MicrophoneMessage::ProcessingDone)
+                    .try_send(MicrophoneMessage::ProcessingDone)
                     .unwrap();
             }
         }

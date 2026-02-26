@@ -3,7 +3,7 @@ use gio::prelude::*;
 use gtk::glib::clone;
 use gtk::prelude::*;
 
-use log::{error, info};
+use log::{debug, error, info};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -11,7 +11,7 @@ use std::rc::Rc;
 use crate::gui::song_history_interface::FavoritesInterface;
 
 use crate::gui::history_entry::HistoryEntry;
-use crate::gui::song_history_interface::SongRecordInterface;
+use crate::gui::song_history_interface::{RecognitionHistoryInterface, SongRecordInterface};
 
 pub struct ContextMenuUtil;
 
@@ -39,7 +39,7 @@ impl ContextMenuUtil {
             move |_: &gtk::GestureClick, _n, x, y| {
                 // gesture.set_state(gtk::EventSequenceState::Claimed);
                 // let cached_record = interface.borrow().get_hovered_record();
-                info!("Selected item: {:?}", selection.selected_item());
+                debug!("Selected item: {:?}", selection.selected_item());
                 // info!("Selected item (cached): {:?}", cached_record);
                 if let Some(record) = selection.selected_item() {
                     let record = record.downcast::<HistoryEntry>().unwrap();
@@ -97,6 +97,7 @@ impl ContextMenuUtil {
     pub fn bind_actions(
         window: adw::ApplicationWindow,
         ctx_selected_item: Rc<RefCell<Option<HistoryEntry>>>,
+        history_interface: Rc<RefCell<RecognitionHistoryInterface>>,
         favorites_interface: Rc<RefCell<FavoritesInterface>>,
     ) {
         let item = ctx_selected_item.clone();
@@ -197,6 +198,16 @@ impl ContextMenuUtil {
             .build();
 
         let item = ctx_selected_item.clone();
+        let history = history_interface.clone();
+        let action_remove_history = gio::ActionEntry::builder("remove-from-history")
+            .activate(move |_, _, _| {
+                if let Some(entry) = &*item.borrow() {
+                    history.borrow_mut().remove(entry.get_song_history_record());
+                }
+            })
+            .build();
+
+        let item = ctx_selected_item.clone();
         let favorites = favorites_interface.clone();
         let action_remove_favorites = gio::ActionEntry::builder("remove-from-favorites")
             .activate(move |_, _, _| {
@@ -215,6 +226,7 @@ impl ContextMenuUtil {
             action_copy_track,
             action_copy_album,
             action_add_favorites,
+            action_remove_history,
             action_remove_favorites,
             action_search_youtube,
         ]);

@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use log::debug;
+use log::{debug, error};
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
@@ -12,9 +12,13 @@ use crate::utils::filesystem_operations::obtain_preferences_file_path;
 #[serde(default)]
 pub struct Preferences {
     pub enable_notifications: Option<bool>,
+    pub enable_systray: Option<bool>,
     pub enable_mpris: Option<bool>,
+    pub no_duplicates: Option<bool>,
     pub buffer_size_secs: Option<u64>,
-    pub request_interval_secs: Option<u64>,
+    pub request_interval_secs: Option<u64>, // Legacy, before increasing default from 4 to 10
+    pub request_interval_secs_v2: Option<u64>, // before decreasing from 10 to 8
+    pub request_interval_secs_v3: Option<u64>,
     pub current_device_name: Option<String>,
 }
 
@@ -22,9 +26,27 @@ impl Preferences {
     pub fn new() -> Self {
         Preferences {
             enable_notifications: None,
+            enable_systray: None,
             enable_mpris: None,
+            no_duplicates: None,
             buffer_size_secs: None,
             request_interval_secs: None,
+            request_interval_secs_v2: None,
+            request_interval_secs_v3: None,
+            current_device_name: None,
+        }
+    }
+
+    pub fn with_interval(interval: u64) -> Self {
+        Preferences {
+            enable_notifications: Some(true),
+            enable_systray: Some(false),
+            enable_mpris: Some(false),
+            no_duplicates: Some(false),
+            buffer_size_secs: Some(12),
+            request_interval_secs: None,
+            request_interval_secs_v2: None,
+            request_interval_secs_v3: Some(interval),
             current_device_name: None,
         }
     }
@@ -34,9 +56,13 @@ impl Default for Preferences {
     fn default() -> Self {
         Preferences {
             enable_notifications: Some(true),
+            enable_systray: Some(false),
             enable_mpris: Some(false),
+            no_duplicates: Some(false),
             buffer_size_secs: Some(12),
-            request_interval_secs: Some(4),
+            request_interval_secs: None,
+            request_interval_secs_v2: None,
+            request_interval_secs_v3: Some(8),
             current_device_name: None,
         }
     }
@@ -53,7 +79,7 @@ impl PreferencesInterface {
         match PreferencesInterface::load() {
             Ok(preferences_interface) => return preferences_interface,
             Err(e) => {
-                eprintln!("{} {}", gettext("When parsing the preferences file:"), e);
+                error!("{} {}", gettext("When parsing the preferences file:"), e);
                 return PreferencesInterface {
                     preferences_file_path: obtain_preferences_file_path().ok(),
                     preferences: Preferences::default(),
@@ -91,12 +117,30 @@ impl PreferencesInterface {
             enable_mpris: update_preferences
                 .enable_mpris
                 .or(current_preferences.enable_mpris),
+            enable_systray: update_preferences
+                .enable_systray
+                .or(current_preferences.enable_systray),
+            no_duplicates: update_preferences
+                .no_duplicates
+                .or(current_preferences.no_duplicates),
             buffer_size_secs: update_preferences
                 .buffer_size_secs
                 .or(current_preferences.buffer_size_secs),
-            request_interval_secs: update_preferences
-                .request_interval_secs
-                .or(current_preferences.request_interval_secs),
+            request_interval_secs: None,
+            request_interval_secs_v2: None,
+            request_interval_secs_v3: update_preferences
+                .request_interval_secs_v2
+                .or(match current_preferences.request_interval_secs {
+                    Some(4) => None,
+                    Some(val) => Some(val),
+                    None => None,
+                })
+                .or(match current_preferences.request_interval_secs_v2 {
+                    Some(10) => None,
+                    Some(val) => Some(val),
+                    None => None,
+                })
+                .or(current_preferences.request_interval_secs_v3),
             current_device_name: update_preferences
                 .current_device_name
                 .or(current_preferences.current_device_name),
@@ -104,7 +148,7 @@ impl PreferencesInterface {
         match self.write() {
             Ok(_) => {}
             Err(e) => {
-                eprintln!("{} {}", gettext("When saving the preferences file:"), e);
+                error!("{} {}", gettext("When saving the preferences file:"), e);
             }
         }
     }

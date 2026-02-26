@@ -11,7 +11,7 @@ mod fingerprinting {
 }
 
 mod core {
-    pub mod http_thread;
+    pub mod http_task;
     pub mod logging;
     pub mod microphone_thread;
     pub mod processing_thread;
@@ -45,7 +45,12 @@ mod utils {
 
     #[cfg(feature = "ffmpeg")]
     pub mod ffmpeg_wrapper;
+}
 
+mod plugins {
+    #[cfg(feature = "gui")]
+    #[cfg(target_os = "linux")]
+    pub mod ksni;
     #[cfg(feature = "mpris")]
     pub mod mpris_player;
 }
@@ -62,12 +67,14 @@ use crate::utils::internationalization::setup_internationalization;
 
 use clap::{command, Arg, ArgAction, Command};
 use gettextrs::gettext;
+use soup::prelude::SessionExt;
 use std::error::Error;
 
 macro_rules! base_app {
     () => {
         command!()
         .about(gettext("An open-source Shazam client for Linux, written in Rust."))
+        .author("Marin M. - Fossplant.re")
         /* .help_template("\
 SongRec {version}
 {about-with-newline}
@@ -86,7 +93,7 @@ SongRec {version}
                 .short('v')
                 .long("verbose")
                 .action(ArgAction::Count)
-                .help(gettext("-v: Set the log level to DEBUG instead of WARN for SongRec-related messages\n\
+                .help(gettext("-v: Set the log level to DEBUG instead of INFO for SongRec-related messages\n\
 -vv: Set the log level to DEBUG for SongRec-related messages and INFO for library-related messages\n\
 -vvv: Set the log level to TRACE"))
         )
@@ -94,10 +101,25 @@ SongRec {version}
             Command::new("listen")
                 .about(gettext("Run as a command-line program listening the microphone and printing recognized songs to stdout, exposing current song info via MPRIS"))
                 .arg(
+                    Arg::new("list-devices")
+                        .short('l')
+                        .long("list-devices")
+                        .action(ArgAction::SetTrue)
+                        .help(gettext("List available audio devices and quit"))
+                )
+                .arg(
                     Arg::new("audio-device")
                         .short('d')
                         .long("audio-device")
                         .help(gettext("Specify the audio device to use"))
+                )
+                .arg(
+                    Arg::new("request-interval")
+                        .short('i')
+                        .long("request-interval")
+                        .default_value("10")
+                        .value_parser(clap::value_parser!(u64))
+                        .help(gettext("Shazam interval between requests in seconds (increase if you are rate-limited)"))
                 )
                 .arg(
                     Arg::new("json")
@@ -125,11 +147,26 @@ SongRec {version}
             Command::new("recognize")
                 .about(gettext("Recognize one song from a sound file or microphone and print its info."))
                 .arg(
+                    Arg::new("list-devices")
+                        .short('l')
+                        .long("list-devices")
+                        .action(ArgAction::SetTrue)
+                        .help(gettext("List available audio devices and quit"))
+                )
+                .arg(
                     Arg::new("audio-device")
                         .short('d')
                         .long("audio-device")
                         .action(ArgAction::Set)
                         .help(gettext("Specify the audio device to use"))
+                )
+                .arg(
+                    Arg::new("request-interval")
+                        .short('i')
+                        .long("request-interval")
+                        .default_value("10")
+                        .value_parser(clap::value_parser!(u64))
+                        .help(gettext("Shazam interval between requests in seconds (increase if you are rate-limited)"))
                 )
                 .arg(
                     Arg::new("json")
@@ -165,10 +202,25 @@ SongRec {version}
             Command::new("microphone-to-recognized-song")
                 .about(gettext("Recognize a currently playing song using the microphone and print obtained information to the standard output"))
                 .arg(
+                    Arg::new("list-devices")
+                        .short('l')
+                        .long("list-devices")
+                        .action(ArgAction::SetTrue)
+                        .help(gettext("List available audio devices and quit"))
+                )
+                .arg(
                     Arg::new("audio-device")
                         .short('d')
                         .long("audio-device")
                         .help(gettext("Specify the audio device to use"))
+                )
+                .arg(
+                    Arg::new("request-interval")
+                        .short('i')
+                        .long("request-interval")
+                        .default_value("10")
+                        .value_parser(clap::value_parser!(u64))
+                        .help(gettext("Shazam interval between requests in seconds (increase if you are rate-limited)"))
                 )
         )
         .subcommand(
@@ -256,7 +308,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Set up logging
 
     let log_object: Logging = match args.get_count("verbose") {
-        0 => Logging::setup_logging(log::LevelFilter::Warn, log::LevelFilter::Warn),
+        0 => Logging::setup_logging(log::LevelFilter::Warn, log::LevelFilter::Info),
         1 => Logging::setup_logging(log::LevelFilter::Warn, log::LevelFilter::Debug),
         2 => Logging::setup_logging(log::LevelFilter::Info, log::LevelFilter::Debug),
         _ => Logging::setup_logging(log::LevelFilter::Trace, log::LevelFilter::Trace),
@@ -272,14 +324,33 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .subcommand_matches("audio-file-to-recognized-song")
                 .unwrap();
 
-            let input_file_string = subcommand_args.get_one::<String>("input_file").unwrap();
+            let session = soup::Session::new();
+            session.set_timeout(20);
 
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&recognize_song_from_signature(
-                    &SignatureGenerator::make_signature_from_file(input_file_string)?
-                )?)?
-            );
+            let input_file_string = subcommand_args
+                .get_one::<String>("input_file")
+                .unwrap()
+                .clone();
+
+            let main_loop = glib::MainLoop::new(None, false);
+            let main_loop_inner = main_loop.clone();
+            glib::spawn_future_local(async move {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(
+                        &recognize_song_from_signature(
+                            &session,
+                            &SignatureGenerator::make_signature_from_file(&input_file_string)
+                                .unwrap()
+                        )
+                        .await
+                        .unwrap()
+                    )
+                    .unwrap()
+                );
+                main_loop_inner.quit();
+            });
+            main_loop.run();
         }
         Some("audio-file-to-fingerprint") => {
             let subcommand_args = args
@@ -298,26 +369,48 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .subcommand_matches("fingerprint-to-recognized-song")
                 .unwrap();
 
-            let fingerprint_string = subcommand_args.get_one::<String>("fingerprint").unwrap();
+            let fingerprint_string = subcommand_args
+                .get_one::<String>("fingerprint")
+                .unwrap()
+                .clone();
 
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&recognize_song_from_signature(
-                    &DecodedSignature::decode_from_uri(fingerprint_string)?
-                )?)?
-            );
+            let session = soup::Session::new();
+            session.set_timeout(20);
+
+            let main_loop = glib::MainLoop::new(None, false);
+            let main_loop_inner = main_loop.clone();
+            glib::spawn_future_local(async move {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(
+                        &recognize_song_from_signature(
+                            &session,
+                            &DecodedSignature::decode_from_uri(&fingerprint_string).unwrap()
+                        )
+                        .await
+                        .unwrap()
+                    )
+                    .unwrap()
+                );
+                main_loop_inner.quit();
+            });
+            main_loop.run();
         }
         Some("listen") => {
             let subcommand_args = args.subcommand_matches("listen").unwrap();
+            let list_devices = subcommand_args.get_flag("list-devices");
             let audio_device = subcommand_args.get_one::<String>("audio-device").cloned();
-            let enable_mpris = !subcommand_args.contains_id("disable-mpris");
-            let enable_json = subcommand_args.contains_id("json");
-            let enable_csv = subcommand_args.contains_id("csv");
+            let request_interval = *subcommand_args.get_one::<u64>("request-interval").unwrap();
+            let enable_mpris = !subcommand_args.get_flag("disable-mpris");
+            let enable_json = subcommand_args.get_flag("json");
+            let enable_csv = subcommand_args.get_flag("csv");
 
             cli_main(CLIParameters {
                 enable_mpris,
+                list_devices,
                 recognize_once: false,
                 audio_device,
+                request_interval,
                 input_file: None,
                 output_type: if enable_json {
                     CLIOutputType::JSON
@@ -330,15 +423,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         Some("recognize") => {
             let subcommand_args = args.subcommand_matches("recognize").unwrap();
+            let list_devices = subcommand_args.get_flag("list-devices");
             let audio_device = subcommand_args.get_one::<String>("audio-device").cloned();
+            let request_interval = *subcommand_args.get_one::<u64>("request-interval").unwrap();
             let input_file = subcommand_args.get_one::<String>("input_file").cloned();
-            let enable_json = subcommand_args.contains_id("json");
-            let enable_csv = subcommand_args.contains_id("csv");
+            let enable_json = subcommand_args.get_flag("json");
+            let enable_csv = subcommand_args.get_flag("csv");
 
             cli_main(CLIParameters {
                 enable_mpris: false,
+                list_devices,
                 recognize_once: true,
                 audio_device,
+                request_interval,
                 input_file,
 
                 output_type: if enable_json {
@@ -354,12 +451,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             let subcommand_args = args
                 .subcommand_matches("microphone-to-recognized-song")
                 .unwrap();
+            let list_devices = subcommand_args.get_flag("list-devices");
             let audio_device = subcommand_args.get_one::<String>("audio-device").cloned();
+            let request_interval = *subcommand_args.get_one::<u64>("request-interval").unwrap();
 
             cli_main(CLIParameters {
                 enable_mpris: false,
+                list_devices,
                 recognize_once: true,
                 audio_device,
+                request_interval,
                 input_file: None,
                 output_type: CLIOutputType::JSON,
             })?;
@@ -372,7 +473,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 log_object,
                 false,
                 subcommand_args.get_one::<String>("input_file").cloned(),
-                !subcommand_args.contains_id("disable-mpris"),
+                !subcommand_args.get_flag("disable-mpris"),
             )?;
         }
         #[cfg(feature = "gui")]
@@ -382,7 +483,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     log_object,
                     true,
                     subcommand_args.get_one::<String>("input_file").cloned(),
-                    !subcommand_args.contains_id("disable-mpris"),
+                    !subcommand_args.get_flag("disable-mpris"),
                 )?;
             } else {
                 gui_main(log_object, true, None, true)?;
@@ -392,8 +493,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         None => {
             cli_main(CLIParameters {
                 enable_mpris: true,
+                list_devices: false,
                 recognize_once: false,
                 audio_device: None,
+                request_interval: 10,
                 input_file: None,
                 output_type: CLIOutputType::SongName,
             })?;

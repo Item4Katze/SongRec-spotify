@@ -41,7 +41,7 @@ pub fn microphone_thread(
     let device_names: Vec<DeviceListItem> = backend.list_devices(&host);
 
     gui_tx
-        .send_blocking(GUIMessage::DevicesList(Box::new(device_names)))
+        .try_send(GUIMessage::DevicesList(Box::new(device_names)))
         .unwrap();
 
     // Process ingress inter-thread messages (stopping or starting
@@ -58,7 +58,7 @@ pub fn microphone_thread(
 
                 let err_fn = move |error: Box<dyn std::error::Error>| {
                     gui_tx_2
-                        .send_blocking(GUIMessage::ErrorMessage(format!(
+                        .try_send(GUIMessage::ErrorMessage(format!(
                             "{} {}",
                             gettext("Audio error:"),
                             error
@@ -177,8 +177,14 @@ pub fn microphone_thread(
                 // source outputs now
                 backend.set_device(&host, &device_name);
 
-                gui_tx_4
-                    .send_blocking(GUIMessage::MicrophoneRecording)
+                gui_tx_4.try_send(GUIMessage::MicrophoneRecording).unwrap();
+            }
+
+            RefreshDevices => {
+                let device_names: Vec<DeviceListItem> = backend.list_devices(&host);
+
+                gui_tx
+                    .try_send(GUIMessage::DevicesList(Box::new(device_names)))
                     .unwrap();
             }
 
@@ -227,7 +233,7 @@ fn write_data<T, U>(
 
     let preferences = preferences_interface.lock().unwrap().preferences.clone();
     let buffer_size_secs = preferences.buffer_size_secs.unwrap() as usize;
-    let request_interval_secs = preferences.request_interval_secs.unwrap() as usize;
+    let request_interval_secs = preferences.request_interval_secs_v3.unwrap() as usize;
 
     let twelve_seconds_buffer = &mut twelve_seconds_buffer[..16000 * buffer_size_secs];
 
@@ -252,14 +258,17 @@ fn write_data<T, U>(
     if *number_unprocessed_samples >= 16000 * request_interval_secs
         && *processing_already_ongoing_borrow == false
     {
-        processing_tx
-            .send_blocking(ProcessingMessage::ProcessAudioSamples(Box::new(
-                twelve_seconds_buffer.to_vec(),
-            )))
-            .unwrap();
+        if !twelve_seconds_buffer.iter().all(|x| *x == 0) {
+            processing_tx
+                .try_send(ProcessingMessage::ProcessAudioSamples(Box::new(
+                    twelve_seconds_buffer.to_vec(),
+                )))
+                .unwrap();
+
+            *processing_already_ongoing_borrow = true;
+        }
 
         *number_unprocessed_samples = 0;
-        *processing_already_ongoing_borrow = true;
     }
 
     // Do microphone volume measurement every 24th of second (so that we can
@@ -280,7 +289,7 @@ fn write_data<T, U>(
         let max_s16le_volume_fraction = max_s16le_amplitude as f32 / 32767.0; // 32767 is the maximum value for an i16 (2**15 - 1)
 
         gui_tx
-            .send_blocking(GUIMessage::MicrophoneVolumePercent(
+            .try_send(GUIMessage::MicrophoneVolumePercent(
                 max_s16le_volume_fraction * 100.0,
             ))
             .unwrap();

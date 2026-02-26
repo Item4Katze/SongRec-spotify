@@ -18,7 +18,7 @@ Features:
 - Ability to recognize songs from your speakers rather than your microphone (on compatible PulseAudio setups).]]></description>
   <homepage rdf:resource="https://songrec.fossplant.re/" />
   <license rdf:resource="http://usefulinc.com/doap/licenses/gplv3" />
-  <support-forum rdf:resource="https://matrix.to/#/!DZgyxHTQHSssuGdiHl:matrix.org" />
+  <support-forum rdf:resource="https://matrix.to/#/#songrec:matrix.org" />
   <download-page rdf:resource="https://github.com/marin-m/SongRec/releases" />
   <bug-database rdf:resource="https://github.com/marin-m/SongRec/issues" />
 

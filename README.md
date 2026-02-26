@@ -15,7 +15,7 @@ Features:
 
 <p align="center"><a href="https://flathub.org/en/apps/re.fossplant.songrec"><img src="packaging/flathub_badge_black.svg?raw=true"></a></p>
 
-A (command-line only) Python version, which I made before rewriting in Rust for performance, is also available for demonstration purposes. It supports file recognition only.
+A (command-line only) [Python version](python-version), which I made before rewriting in Rust for performance, is also available for demonstration purposes. It supports file recognition only.
 
 ## How it works
 
@@ -36,13 +36,19 @@ sudo pacman -S songrec
 songrec
 ```
 
-Using apt with PPA (Ubuntu, supported up to the current 25.10):
+Using apt with PPA (Ubuntu, supported from 24.04 LTS up to the current 25.10):
 
 ```bash
 wget -qO- 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6888550b2fc77d09' | sudo tee /etc/apt/trusted.gpg.d/songrec.asc
 sudo apt-add-repository ppa:marin-m/songrec -y -u
 sudo apt install songrec -y
 songrec
+```
+
+Using app with Snapcraft (all Ubuntu versions):
+
+```bash
+sudo snap install songrec
 ```
 
 Using Flatpak (all distributions) (NOTE: with Flatpak, the GUI should work fine but some of the CLI features may not be usable due to filesystem sandboxing restrictions):
@@ -61,7 +67,7 @@ sudo apt install cargo rustc -y
 echo 'export PATH="$HOME/.cargo/bin:$PATH"' | tee -a ~/.profile ~/.bashrc
 source ~/.bashrc
 
-sudo apt install build-essential libasound2-dev libpulse-dev libgtk-4-dev libadwaita-1-dev libdbus-1-dev libssl-dev -y
+sudo apt install build-essential libasound2-dev libpulse-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev -y
 cargo install songrec --no-default-features -F gui,ffmpeg,pulse,mpris
 songrec
 ```
@@ -73,6 +79,16 @@ Note: You may remove dependencies over GTK+, Pulseaudio/PipeWire's libpulse or D
 ## Compilation
 
 (**WARNING**: Remind to compile the code in "--release" mode for correct performance.)
+
+<a href="https://weblate.fossplant.re/engage/songrec/">
+<img src="https://weblate.fossplant.re/widget/songrec/songrec/svg-badge.svg" alt="État de la traduction" />
+</a>
+<a href="https://crates.io/crates/songrec">
+<img alt="Crates.io Version" src="https://img.shields.io/crates/v/songrec">
+</a>
+<a href="https://snapcraft.io/songrec">
+<img alt="Snapcraft Version" src="https://img.shields.io/snapcraft/v/songrec/latest/stable">
+</a>
 
 ### Installing Rust
 
@@ -106,26 +122,26 @@ rustup update
 Debian:
 
 ```bash
-sudo apt install build-essential libasound2-dev libpulse-dev libgtk-4-dev libadwaita-1-dev libdbus-1-dev libssl-dev intltool
+sudo apt install build-essential libasound2-dev libpulse-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev intltool
 ```
 
 Void Linux (libressl):
 
 ```shell
-sudo xbps-install base-devel alsa-lib-devel pulseaudio-devel gtk4-devel libadwaita-devel dbus-devel libressl-devel intltool
+sudo xbps-install base-devel alsa-lib-devel pulseaudio-devel gtk4-devel libsoup3-devel libadwaita-devel dbus-devel libressl-devel intltool
 ```
 
 Void Linux (openssl):
 
 ```shell
-sudo xbps-install base-devel alsa-lib-devel pulseaudio-devel gtk4-devel libadwaita-devel dbus-devel openssl-devel intltool
+sudo xbps-install base-devel alsa-lib-devel pulseaudio-devel gtk4-devel libsoup3-devel libadwaita-devel dbus-devel openssl-devel intltool
 ```
 
 Fedora Linux:
 
 ```shell
 sudo dnf groupinstall "Development Tools"
-sudo dnf install alsa-lib-devel pulseaudio-libs-devel openssl-devel dbus-devel pkgconf-pkg-config glib gtk4-devel libadwaita-devel
+sudo dnf install alsa-lib-devel pulseaudio-libs-devel pkgconf-pkg-config glib gtk4-devel libsoup3-devel libadwaita-devel dbus-devel openssl-devel
 ```
 
 ### Compiling the project
@@ -147,7 +163,7 @@ For the latter, you will then find the project's binary (that you will be able t
 
 Note: You may remove dependencies over GTK+, Pulseaudio/PipeWire's libpulse or DBus MPRIS through editing the `-F` flag passed to `cargo`.
 
-### Building the Snap package
+### Building the Snap package
 
 When building the Snap package locally, be sure to connect the `:audio-record` interface manually so that the application works:
 
@@ -156,7 +172,7 @@ git clone https://github.com/marin-m/songrec
 cd songrec
 snapcraft pack
 sudo snap remove --purge songrec
-sudo snap install --dangerous songrec_0.6.2_amd64.snap
+sudo snap install --dangerous songrec_0.6.4_amd64.snap
 sudo snap connect songrec:audio-record :audio-record
 songrec
 ```

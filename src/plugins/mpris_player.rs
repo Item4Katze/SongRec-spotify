@@ -38,8 +38,9 @@ pub fn get_player() -> Option<Arc<MprisPlayer>> {
         MprisPlayer::new(
             match std::env::var("SNAP_NAME") {
                 Ok(_) => "songrec",
-                _ => "re.fossplant.songrec"
-            }.to_string(),
+                _ => "re.fossplant.songrec",
+            }
+            .to_string(),
             "SongRec".to_string(),
             "re.fossplant.songrec.desktop".to_string(),
         )

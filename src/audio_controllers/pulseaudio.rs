@@ -1,7 +1,6 @@
 use cpal::platform::{Device, Host};
 use cpal::traits::HostTrait;
 
-use pulsectl::controllers::types::DeviceInfo;
 use pulsectl::controllers::{AppControl, DeviceControl, SourceController};
 
 use crate::audio_controllers::audio_backend::AudioBackend;
@@ -11,22 +10,14 @@ use log::debug;
 
 pub struct PulseBackend {
     handler: SourceController,
-    devices: Vec<DeviceInfo>,
-    default_device: String,
 }
 
 impl PulseBackend {
     pub fn try_init() -> Option<Self> {
         if let Ok(mut handler) = SourceController::create() {
-            if let Ok(info) = handler.get_server_info() {
-                if let Some(default_device) = info.default_source_name {
-                    if let Ok(devices) = handler.list_devices() {
-                        return Some(Self {
-                            handler,
-                            devices: devices.clone(),
-                            default_device,
-                        });
-                    }
+            if let Ok(_) = handler.get_server_info() {
+                if let Ok(_) = handler.list_devices() {
+                    return Some(Self { handler });
                 }
             }
         }
@@ -67,50 +58,57 @@ impl AudioBackend for PulseBackend {
         let mut device_names: Vec<DeviceListItem> = vec![];
         let mut monitor_device_names: Vec<DeviceListItem> = vec![];
 
-        for dev in &self.devices {
-            if let Some(desc) = &dev.description {
-                if let Some(name) = &dev.name {
-                    if name == &self.default_device {
-                        device_names.insert(
-                            0,
-                            DeviceListItem {
-                                inner_name: name.to_string(),
-                                display_name: desc.to_string(),
-                                is_monitor: dev.monitor != None,
-                            },
-                        );
-                    } else if dev.monitor != None {
-                        monitor_device_names.push(DeviceListItem {
-                            inner_name: name.to_string(),
-                            display_name: desc.to_string(),
-                            is_monitor: true,
-                        });
-                    } else {
-                        device_names.push(DeviceListItem {
-                            inner_name: name.to_string(),
-                            display_name: desc.to_string(),
-                            is_monitor: false,
-                        });
+        if let Ok(info) = self.handler.get_server_info() {
+            if let Ok(devices) = self.handler.list_devices() {
+                for dev in devices {
+                    if let Some(desc) = &dev.description {
+                        if let Some(name) = &dev.name {
+                            if &dev.name == &info.default_source_name {
+                                device_names.insert(
+                                    0,
+                                    DeviceListItem {
+                                        inner_name: name.to_string(),
+                                        display_name: desc.to_string(),
+                                        is_monitor: dev.monitor != None,
+                                    },
+                                );
+                            } else if dev.monitor != None {
+                                monitor_device_names.push(DeviceListItem {
+                                    inner_name: name.to_string(),
+                                    display_name: desc.to_string(),
+                                    is_monitor: true,
+                                });
+                            } else {
+                                device_names.push(DeviceListItem {
+                                    inner_name: name.to_string(),
+                                    display_name: desc.to_string(),
+                                    is_monitor: false,
+                                });
+                            }
+                        }
                     }
                 }
             }
         }
+
         device_names.extend(monitor_device_names);
         device_names
     }
 
     fn set_device(&mut self, host: &Host, inner_name: &str) -> Device {
-        if let Some(app_idx) = self.get_app_idx() {
-            for dev in self.devices.clone() {
-                debug!(
-                    "Comparing libpulse device names: {:?} / {:?}",
-                    dev.name, inner_name
-                );
-                if Some(inner_name) == dev.name.as_deref() {
-                    debug!("Selected libpulse device found: {:?}", dev);
+        if let Ok(devices) = self.handler.list_devices() {
+            if let Some(app_idx) = self.get_app_idx() {
+                for dev in devices {
+                    debug!(
+                        "Comparing libpulse device names: {:?} / {:?}",
+                        dev.name, inner_name
+                    );
+                    if Some(inner_name) == dev.name.as_deref() {
+                        debug!("Selected libpulse device found: {:?}", dev);
 
-                    self.handler.move_app_by_name(app_idx, inner_name).unwrap();
-                    break;
+                        self.handler.move_app_by_name(app_idx, inner_name).unwrap();
+                        break;
+                    }
                 }
             }
         }

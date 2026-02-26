@@ -1,7 +1,20 @@
 name: songrec # you probably want to 'snapcraft register <name>'
 adopt-info: share
+title: SongRec
+summary: Unofficial Shazam client for Linux, written in Rust
+description: |
+  SongRec is an unofficial Shazam client for Linux, written in Rust. It allows you to easily recognize songs from your speakers, microphone or audio files.
+  
+  Features:
+  - Recognize audio from an arbitrary audio file.
+  - Recognize audio from the microphone.
+  - Usage from both GUI and command line (for the file recognition part).
+  - Provide an history of the recognized songs on the GUI, exportable to CSV.
+  - Continuous song detection from the microphone, with the ability to choose your input device.
+  - Ability to recognize songs from your speakers rather than your microphone (on compatible PulseAudio setups).
+license: GPL-3.0+
 base: core24 # the base snap is the execution environment for this snap
-version: '0.6.2' # just for humans, typically '1.2+git' or '1.3.2'
+version: '0.6.4' # just for humans, typically '1.2+git' or '1.3.2'
 
 grade: stable # must be 'stable' to release into candidate/stable channels
 confinement: strict # use 'strict' once you have the right plugs and slots
@@ -13,11 +26,12 @@ apps:
     - snap/command-chain/gpu-2404-wrapper
     - snap/command-chain/desktop-launch
     command: bin/songrec
-    desktop: usr/share/applications/re.fossplant.songrec.desktop
+    desktop: usr/share/applications/com.github.marinm.songrec.desktop
     extensions: [gnome]
     plugs:
       - home
       - network
+      - network-status
       - desktop
       - desktop-legacy
       - wayland
@@ -37,7 +51,7 @@ slots:
   dbus-svc: # name that is used with 'snap connect' on slots side
     interface: dbus
     bus: session
-    name: re.fossplant.songrec
+    name: com.github.marinm.songrec
 
 plugs:
   desktop:
@@ -46,7 +60,7 @@ plugs:
     interface: content
     target: $SNAP/gnome-platform
     default-provider: gnome-46-2404
-  gtk-4-themes:
+  gtk-3-themes:
     interface: content
     target: $SNAP/data-dir/themes
     default-provider: gtk-common-themes
@@ -69,11 +83,11 @@ parts:
     build-packages:
       - libasound2-dev
       - libgtk-4-dev
+      - libsoup-3.0-dev
       - libdbus-1-dev
       - libadwaita-1-dev
       - libpulse-dev
       - librsvg2-dev
-      - libssl-dev
       - libffi-dev
 
     stage-packages:
@@ -81,6 +95,7 @@ parts:
       - pipewire-alsa
       - libasound2
       - libgtk-4-1
+      - libsoup-3.0-0
       - libadwaita-1-0
       - libpulse0
       - gir1.2-gtk-4.0
@@ -92,6 +107,7 @@ parts:
       - libffi8
 
     plugin: rust
+    rust-use-global-lto: true
     source: .
 
     after: [alsa-mixin]
@@ -109,6 +125,22 @@ parts:
       - libasound2
       - libasound2-plugins
       - yad
+  
+  translations:
+    plugin: dump
+    source: translations/
+    source-type: local
+
+    override-pull: |
+      snapcraftctl pull
+
+      mkdir -p bin/translations
+      mkdir -p snap/command-chain
+      mv locale bin/translations/
+      cp -a bin/translations snap/command-chain/
+      rm -f README.md interface.ui.h songrec.pot update_po_files.sh
+  
+    after: [share]
 
   share:
     plugin: dump
@@ -120,7 +152,9 @@ parts:
       snapcraftctl pull
 
       # Point icon to the correct location
-      sed -i -e 's|Icon=re.fossplant.songrec|Icon=/usr/share/icons/hicolor/scalable/apps/re.fossplant.songrec.svg|g' usr/share/applications/re.fossplant.songrec.desktop
+      mv usr/share/applications/re.fossplant.songrec.desktop usr/share/applications/com.github.marinm.songrec.desktop
+      sed -i -e 's|re.fossplant.songrec.desktop|com.github.marinm.songrec.desktop|g' usr/share/metainfo/re.fossplant.songrec.metainfo.xml
+      sed -i -e 's|Icon=re.fossplant.songrec|Icon=/usr/share/icons/hicolor/scalable/apps/re.fossplant.songrec.svg|g' usr/share/applications/com.github.marinm.songrec.desktop
 
 layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/alsa-lib:

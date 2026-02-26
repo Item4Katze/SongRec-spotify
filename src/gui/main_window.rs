@@ -5,12 +5,13 @@ use log::{debug, error, info, trace};
 #[cfg(feature = "mpris")]
 use mpris_player::PlaybackStatus;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use serde_json::json;
 use std::cell::RefCell;
 use std::error::Error;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use crate::core::http_thread::http_thread;
+use crate::core::http_task::http_task;
 use crate::core::logging::Logging;
 use crate::core::microphone_thread::microphone_thread;
 use crate::core::processing_thread::processing_thread;
@@ -19,12 +20,14 @@ use crate::core::thread_messages::{GUIMessage::*, *};
 use crate::gui::song_history_interface::FavoritesInterface;
 
 use crate::gui::song_history_interface::{RecognitionHistoryInterface, SongRecordInterface};
+#[cfg(target_os = "linux")]
+use crate::plugins::ksni::SystrayInterface;
+#[cfg(feature = "mpris")]
+use crate::plugins::mpris_player::{get_player, update_song};
 use crate::utils::csv_song_history::SongHistoryRecord;
 use crate::utils::filesystem_operations::{
     obtain_favorites_csv_path, obtain_recognition_history_csv_path,
 };
-#[cfg(feature = "mpris")]
-use crate::utils::mpris_player::{get_player, update_song};
 
 use crate::gui::preferences::{Preferences, PreferencesInterface};
 
@@ -57,6 +60,8 @@ struct App {
 
     ctx_selected_item: Rc<RefCell<Option<HistoryEntry>>>,
     ctx_buffered_log: Rc<RefCell<String>>,
+    #[cfg(target_os = "linux")]
+    ctx_systray_handle: Rc<RefCell<Option<ksni::Handle<SystrayInterface>>>>,
     ctx_logger_source_id: Rc<RefCell<Option<glib::source::SourceId>>>,
 
     gui_tx: async_channel::Sender<GUIMessage>,
@@ -79,6 +84,10 @@ impl App {
 
         log_object.connect_to_gui_logger(gui_tx.clone());
 
+        glib::set_prgname(Some(match std::env::var("SNAP_NAME") {
+            Ok(_) => "com.github.marinm.songrec",
+            _ => "re.fossplant.songrec",
+        }));
         Self::load_resources();
 
         gtk::init().unwrap();
@@ -87,7 +96,6 @@ impl App {
             let icon_theme = gtk::IconTheme::for_display(&display);
             icon_theme.add_resource_path("/re/fossplant/songrec/");
         }
-        glib::set_prgname(Some("re.fossplant.songrec"));
 
         let builder = gtk::Builder::new();
 
@@ -105,19 +113,27 @@ impl App {
             .add_from_resource("/re/fossplant/songrec/interface.ui")
             .unwrap();
 
-        let history_list_store = builder.object("history_list_store").unwrap();
+        let history_list_store: gio::ListStore = builder.object("history_list_store").unwrap();
         let song_history_interface = Rc::new(RefCell::new(
             RecognitionHistoryInterface::new(
-                history_list_store,
+                history_list_store.clone(),
                 obtain_recognition_history_csv_path,
             )
             .unwrap(),
         ));
 
-        let favorites_list_store = builder.object("favorites_list_store").unwrap();
+        let history_selection: gtk::SingleSelection = builder.object("history_selection").unwrap();
+        history_selection.set_model(Some(&history_list_store));
+
+        let favorites_list_store: gio::ListStore = builder.object("favorites_list_store").unwrap();
         let favorites_interface = Rc::new(RefCell::new(
-            FavoritesInterface::new(favorites_list_store, obtain_favorites_csv_path).unwrap(),
+            FavoritesInterface::new(favorites_list_store.clone(), obtain_favorites_csv_path)
+                .unwrap(),
         ));
+
+        let favorites_selection: gtk::SingleSelection =
+            builder.object("favorites_selection").unwrap();
+        favorites_selection.set_model(Some(&favorites_list_store));
 
         let ctx_selected_item: Rc<RefCell<Option<HistoryEntry>>> = Rc::new(RefCell::new(None));
         let ctx_buffered_log: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
@@ -132,7 +148,7 @@ impl App {
         buffer_size_value.set_value(old_preferences.buffer_size_secs.unwrap() as f64);
 
         let request_interval_value: gtk::Adjustment = builder.object("interval_value").unwrap();
-        request_interval_value.set_value(old_preferences.request_interval_secs.unwrap() as f64);
+        request_interval_value.set_value(old_preferences.request_interval_secs_v3.unwrap() as f64);
 
         App {
             builder,
@@ -141,6 +157,9 @@ impl App {
             favorites_interface,
             preferences_interface,
             old_preferences,
+
+            #[cfg(target_os = "linux")]
+            ctx_systray_handle: Rc::new(RefCell::new(None)),
 
             ctx_selected_item,
             ctx_buffered_log,
@@ -164,7 +183,15 @@ impl App {
 
     fn run(self, set_recording: bool, enable_mpris_cli: bool, input_file: Option<String>) {
         let application = adw::Application::new(
-            Some("re.fossplant.songrec"),
+            // We're using a different DBus ID over Snap
+            // per request of the Snapcraft team
+            // (they don't want to allocate us the one
+            // that we had to switch to in order to
+            // get verified on Flathub)
+            Some(match std::env::var("SNAP_NAME") {
+                Ok(_) => "com.github.marinm.songrec",
+                _ => "re.fossplant.songrec",
+            }),
             gio::ApplicationFlags::HANDLES_OPEN,
         );
 
@@ -183,7 +210,7 @@ impl App {
                     let file_path_string = file_path.into_os_string().into_string().unwrap();
 
                     processing_tx
-                        .send_blocking(ProcessingMessage::ProcessAudioFile(file_path_string))
+                        .try_send(ProcessingMessage::ProcessAudioFile(file_path_string))
                         .unwrap();
                 }
             }
@@ -208,6 +235,46 @@ impl App {
         }
     }
 
+    fn notify_application_error(
+        preferences_interface: Arc<Mutex<PreferencesInterface>>,
+        label: &str,
+        application: &adw::Application,
+    ) {
+        if preferences_interface
+            .lock()
+            .unwrap()
+            .preferences
+            .enable_notifications
+            == Some(true)
+        {
+            let notification = gio::Notification::new(&gettext("Application error"));
+            notification.set_body(Some(&label));
+            notification.set_category(Some("network.error"));
+            application.send_notification(Some("application-error"), &notification);
+        }
+    }
+
+    fn notify_network_error(
+        preferences_interface: Arc<Mutex<PreferencesInterface>>,
+        label: &str,
+        application: &adw::Application,
+        always: bool,
+    ) {
+        if always
+            || preferences_interface
+                .lock()
+                .unwrap()
+                .preferences
+                .enable_notifications
+                == Some(true)
+        {
+            let notification = gio::Notification::new(&gettext("Network error"));
+            notification.set_body(Some(&label));
+            notification.set_category(Some("network.error"));
+            application.send_notification(Some("network-error"), &notification);
+        }
+    }
+
     fn on_startup(
         &self,
         application: &adw::Application,
@@ -216,8 +283,54 @@ impl App {
     ) {
         self.setup_intercom(application, set_recording, enable_mpris_cli);
         self.setup_actions(application, enable_mpris_cli);
+        #[cfg(target_os = "linux")]
+        if self.old_preferences.enable_systray == Some(true) {
+            let window: adw::ApplicationWindow = self.builder.object("main_window").unwrap();
+            Self::setup_systray(self.ctx_systray_handle.clone(), window, self.gui_tx.clone());
+        }
         self.setup_context_menus();
         self.show_window(application);
+    }
+
+    #[cfg(target_os = "linux")]
+    fn setup_systray(
+        ctx_systray_handle: Rc<RefCell<Option<ksni::Handle<SystrayInterface>>>>,
+        window: adw::ApplicationWindow,
+        gui_tx: async_channel::Sender<GUIMessage>,
+    ) {
+        glib::spawn_future_local(async move {
+            if ctx_systray_handle.take().is_none() {
+                match SystrayInterface::try_enable(gui_tx).await {
+                    Ok(handle) => {
+                        *ctx_systray_handle.borrow_mut() = Some(handle);
+                        window.set_hide_on_close(true);
+                    }
+                    Err(err) => {
+                        error!(
+                            "{}: {:?}",
+                            gettext("Unable to enable notification icon"),
+                            err
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    #[cfg(target_os = "linux")]
+    fn unsetup_systray(
+        ctx_systray_handle: Rc<RefCell<Option<ksni::Handle<SystrayInterface>>>>,
+        window: adw::ApplicationWindow,
+    ) {
+        let window = window.clone();
+        glib::spawn_future_local(async move {
+            let ctx_systray_handle = ctx_systray_handle.clone();
+            if let Some(handle) = ctx_systray_handle.take() {
+                window.set_hide_on_close(false);
+                *ctx_systray_handle.borrow_mut() = None;
+                SystrayInterface::disable(&handle).await;
+            }
+        });
     }
 
     fn setup_context_menus(&self) {
@@ -240,6 +353,7 @@ impl App {
         ContextMenuUtil::bind_actions(
             self.builder.object("main_window").unwrap(),
             self.ctx_selected_item.clone(),
+            self.song_history_interface.clone(),
             self.favorites_interface.clone(),
         );
 
@@ -291,10 +405,10 @@ impl App {
                         }
                     } else {
                         microphone_tx
-                            .send_blocking(MicrophoneMessage::MicrophoneRecordStop)
+                            .try_send(MicrophoneMessage::MicrophoneRecordStop)
                             .unwrap();
                         microphone_tx
-                            .send_blocking(MicrophoneMessage::MicrophoneRecordStart(
+                            .try_send(MicrophoneMessage::MicrophoneRecordStart(
                                 current_device.inner_name().to_owned(),
                             ))
                             .unwrap();
@@ -303,7 +417,7 @@ impl App {
             } else if !microphone_switch.is_active() && !loopback_switch.is_active() {
                 device_section.set_visible(false);
                 microphone_tx
-                    .send_blocking(MicrophoneMessage::MicrophoneRecordStop)
+                    .try_send(MicrophoneMessage::MicrophoneRecordStop)
                     .unwrap();
             }
 
@@ -346,10 +460,10 @@ impl App {
                         }
                     } else {
                         microphone_tx
-                            .send_blocking(MicrophoneMessage::MicrophoneRecordStop)
+                            .try_send(MicrophoneMessage::MicrophoneRecordStop)
                             .unwrap();
                         microphone_tx
-                            .send_blocking(MicrophoneMessage::MicrophoneRecordStart(
+                            .try_send(MicrophoneMessage::MicrophoneRecordStart(
                                 current_device.inner_name().to_owned(),
                             ))
                             .unwrap();
@@ -358,7 +472,7 @@ impl App {
             } else if !microphone_switch.is_active() && !loopback_switch.is_active() {
                 device_section.set_visible(false);
                 microphone_tx
-                    .send_blocking(MicrophoneMessage::MicrophoneRecordStop)
+                    .try_send(MicrophoneMessage::MicrophoneRecordStop)
                     .unwrap();
             }
 
@@ -397,7 +511,7 @@ impl App {
                 let mut new_preference = Preferences::new();
                 new_preference.current_device_name = Some(device_name.to_string());
                 gui_tx
-                    .send_blocking(GUIMessage::UpdatePreference(new_preference))
+                    .try_send(GUIMessage::UpdatePreference(new_preference))
                     .unwrap();
 
                 // Should we start recording yet? (will depend of the possible
@@ -405,10 +519,10 @@ impl App {
 
                 if microphone_switch.is_active() || loopback_switch.is_active() {
                     microphone_tx
-                        .send_blocking(MicrophoneMessage::MicrophoneRecordStop)
+                        .try_send(MicrophoneMessage::MicrophoneRecordStop)
                         .unwrap();
                     microphone_tx
-                        .send_blocking(MicrophoneMessage::MicrophoneRecordStart(
+                        .try_send(MicrophoneMessage::MicrophoneRecordStart(
                             device_name.to_owned(),
                         ))
                         .unwrap();
@@ -425,7 +539,7 @@ impl App {
             let mut new_preference = Preferences::new();
             new_preference.buffer_size_secs = Some(adjustment.value() as u64);
             gui_tx
-                .send_blocking(GUIMessage::UpdatePreference(new_preference))
+                .try_send(GUIMessage::UpdatePreference(new_preference))
                 .unwrap();
             None
         });
@@ -436,9 +550,9 @@ impl App {
             let adjustment = values[0].get::<gtk::Adjustment>().unwrap();
             debug!("Request interval set to: {}", adjustment.value());
             let mut new_preference = Preferences::new();
-            new_preference.request_interval_secs = Some(adjustment.value() as u64);
+            new_preference.request_interval_secs_v3 = Some(adjustment.value() as u64);
             gui_tx
-                .send_blocking(GUIMessage::UpdatePreference(new_preference))
+                .try_send(GUIMessage::UpdatePreference(new_preference))
                 .unwrap();
             None
         });
@@ -458,7 +572,7 @@ impl App {
         set_recording: bool,
         enable_mpris_cli: bool,
     ) {
-        // WIP: Setup threads + smol-rs/async-channel::unbounded listener
+        // Setup communication using threads + smol-rs/async-channel::unbounded listener
 
         // NOTE: Dropping the removed glib::MainContext from legacy code:
         // https://discourse.gnome.org/t/help-required-to-migrate-from-dropped-maincontext-channel-api/20922
@@ -482,16 +596,15 @@ impl App {
         let http_rx = self.http_rx.clone();
         let gui_tx = self.gui_tx.clone();
         let microphone_tx = self.microphone_tx.clone();
-        spawn_big_thread(move || {
-            http_thread(http_rx, gui_tx, microphone_tx);
-        });
+        glib::spawn_future_local(http_task(http_rx, gui_tx, microphone_tx));
 
         let gui_rx = self.gui_rx.clone();
         let preferences_interface_ptr = self.preferences_interface.clone();
 
         let old_device_name = self.old_preferences.current_device_name.clone();
 
-        let window: gtk::ApplicationWindow = self.builder.object("main_window").unwrap();
+        let window: adw::ApplicationWindow = self.builder.object("main_window").unwrap();
+        let systray_setting: adw::SwitchRow = self.builder.object("systray_setting").unwrap();
         let adw_combo_row: adw::ComboRow = self.builder.object("audio_inputs").unwrap();
         let g_list_store: gio::ListStore = self.builder.object("audio_inputs_model").unwrap();
         let microphone_switch: adw::SwitchRow = self.builder.object("microphone_switch").unwrap();
@@ -507,6 +620,9 @@ impl App {
         let results_image: gtk::Image = self.builder.object("results_image").unwrap();
         let results_label: gtk::Label = self.builder.object("results_label").unwrap();
         let loopback_switch: adw::SwitchRow = self.builder.object("loopback_switch").unwrap();
+
+        #[cfg(target_os = "linux")]
+        systray_setting.set_visible(true);
 
         microphone_switch.set_active(set_recording);
 
@@ -552,6 +668,20 @@ impl App {
                 } else {
                     if let MicrophoneVolumePercent(_) = gui_message {
                         trace!("Received GUI message: {:?}", gui_message);
+                    } else if let SongRecognized(ref msg) = gui_message {
+                        debug!("Received GUI message: SongRecognized({})", json!({
+                            "artist_name": msg.artist_name.clone(),
+                            "album_name": msg.album_name.clone(),
+                            "song_name": msg.song_name.clone(),
+                            "cover_image": match &msg.cover_image {
+                                Some(data) => Some::<String>(format!("{:02x?}...", &data[..16]).into()),
+                                None => None
+                            },
+                            "track_key": msg.track_key.clone(),
+                            "release_year": msg.release_year.clone(),
+                            "genre": msg.genre.clone(),
+                            "shazam_json": msg.shazam_json.clone()
+                        }).to_string());
                     } else {
                         debug!("Received GUI message: {:?}", gui_message);
                     }
@@ -599,12 +729,36 @@ impl App {
                                 error!("Displaying error: {}", string);
                                 let dialog = gtk::AlertDialog::builder().message(&string).build();
                                 dialog.show(Some(&window));
+
+                                if string != gettext("No match for this song") {
+                                    Self::notify_application_error(
+                                        preferences_interface_ptr.clone(),
+                                        &string,
+                                        &application.clone(),
+                                    );
+                                }
                             }
                         }
                         RateLimitState(is_rate_limited) => {
+                            if is_rate_limited && !rate_limited_message.is_visible() {
+                                Self::notify_network_error(
+                                    preferences_interface_ptr.clone(),
+                                    &rate_limited_message.label(),
+                                    &application.clone(),
+                                    true,
+                                );
+                            }
                             rate_limited_message.set_visible(is_rate_limited);
                         }
                         NetworkStatus(network_is_reachable) => {
+                            if !network_is_reachable && !no_network_message.is_visible() {
+                                Self::notify_network_error(
+                                    preferences_interface_ptr.clone(),
+                                    &no_network_message.label(),
+                                    &application.clone(),
+                                    false,
+                                );
+                            }
                             no_network_message.set_visible(!network_is_reachable);
 
                             #[cfg(feature = "mpris")]
@@ -694,34 +848,47 @@ impl App {
                                         .send_notification(Some("recognized-song"), &notification);
                                 }
 
-                                song_history_interface.borrow_mut().add_row_and_save(
-                                    SongHistoryRecord {
-                                        song_name: song_name,
-                                        album: Some(
-                                            message
-                                                .album_name
-                                                .as_ref()
-                                                .unwrap_or(&"".to_string())
-                                                .to_string(),
-                                        ),
-                                        track_key: Some(message.track_key),
-                                        release_year: Some(
-                                            message
-                                                .release_year
-                                                .as_ref()
-                                                .unwrap_or(&"".to_string())
-                                                .to_string(),
-                                        ),
-                                        genre: Some(
-                                            message
-                                                .genre
-                                                .as_ref()
-                                                .unwrap_or(&"".to_string())
-                                                .to_string(),
-                                        ),
-                                        recognition_date: Local::now().format("%c").to_string(),
-                                    },
-                                );
+                                let new_entry = SongHistoryRecord {
+                                    song_name: song_name,
+                                    album: Some(
+                                        message
+                                            .album_name
+                                            .as_ref()
+                                            .unwrap_or(&"".to_string())
+                                            .to_string(),
+                                    ),
+                                    track_key: Some(message.track_key),
+                                    release_year: Some(
+                                        message
+                                            .release_year
+                                            .as_ref()
+                                            .unwrap_or(&"".to_string())
+                                            .to_string(),
+                                    ),
+                                    genre: Some(
+                                        message
+                                            .genre
+                                            .as_ref()
+                                            .unwrap_or(&"".to_string())
+                                            .to_string(),
+                                    ),
+                                    recognition_date: Local::now().format("%c").to_string(),
+                                };
+
+                                if preferences_interface_ptr
+                                    .lock()
+                                    .unwrap()
+                                    .preferences
+                                    .no_duplicates
+                                    == Some(true)
+                                {
+                                    song_history_interface
+                                        .borrow_mut()
+                                        .remove(new_entry.clone());
+                                }
+                                song_history_interface
+                                    .borrow_mut()
+                                    .add_row_and_save(new_entry);
                             }
                         }
                         // This message is sent once in the program execution for
@@ -809,12 +976,20 @@ impl App {
                             );
                         }
 
+                        ShowWindow => {
+                            window.present();
+                        }
+
+                        QuitApplication => {
+                            application.quit();
+                        }
+
                         _ => {
                             debug!("(parsing unimplemented yet): {:?}", gui_message);
                         }
                     }
 
-                    // TODO handle missing messages here
+                    // Possibly handle missing messages here
                 }
             }
         });
@@ -823,11 +998,13 @@ impl App {
     fn setup_actions(&self, application: &adw::Application, enable_mpris_cli: bool) {
         let window: adw::ApplicationWindow = self.builder.object("main_window").unwrap();
         let file_picker: gtk::FileDialog = self.builder.object("file_picker").unwrap();
-        let shortcuts_dialog: gtk::ShortcutsWindow = self.builder.object("shortcuts_window").unwrap();
+        let shortcuts_dialog: gtk::ShortcutsWindow =
+            self.builder.object("shortcuts_window").unwrap();
         let about_dialog: adw::AboutDialog = self.builder.object("about_dialog").unwrap();
         let results_label: gtk::Label = self.builder.object("results_label").unwrap();
         let menu_button: gtk::MenuButton = self.builder.object("menu_button").unwrap();
-        let navigation_view: adw::NavigationView = self.builder.object("main_window_pages").unwrap();
+        let navigation_view: adw::NavigationView =
+            self.builder.object("main_window_pages").unwrap();
         let recognize_file_row: adw::PreferencesRow =
             self.builder.object("recognize_file_row").unwrap();
         let spinner_row: adw::PreferencesRow = self.builder.object("spinner_row").unwrap();
@@ -889,7 +1066,7 @@ impl App {
                             spinner_row.set_visible(true);
 
                             processing_tx
-                                .send_blocking(ProcessingMessage::ProcessAudioFile(path_str))
+                                .try_send(ProcessingMessage::ProcessAudioFile(path_str))
                                 .unwrap();
                         }
                         Err(error) => {
@@ -993,7 +1170,7 @@ impl App {
 
         let action_wipe_history = gio::ActionEntry::builder("wipe-history")
             .activate(move |_window, _action, _obj| {
-                gui_tx.send_blocking(GUIMessage::WipeSongHistory).unwrap();
+                gui_tx.try_send(GUIMessage::WipeSongHistory).unwrap();
             })
             .build();
 
@@ -1011,7 +1188,7 @@ impl App {
                 let mut new_preference: Preferences = Preferences::new();
                 new_preference.enable_mpris = Some(new_state);
                 gui_tx
-                    .send_blocking(GUIMessage::UpdatePreference(new_preference))
+                    .try_send(GUIMessage::UpdatePreference(new_preference))
                     .unwrap();
             })
             .build();
@@ -1034,7 +1211,56 @@ impl App {
                 let mut new_preference: Preferences = Preferences::new();
                 new_preference.enable_notifications = Some(new_state);
                 gui_tx
-                    .send_blocking(GUIMessage::UpdatePreference(new_preference))
+                    .try_send(GUIMessage::UpdatePreference(new_preference))
+                    .unwrap();
+            })
+            .build();
+
+        let gui_tx = self.gui_tx.clone();
+        #[cfg(target_os = "linux")]
+        let ctx_systray_handle = self.ctx_systray_handle.clone();
+
+        #[cfg(target_os = "linux")]
+        let action_systray_setting = gio::ActionEntry::builder("systray-setting")
+            .state(self.old_preferences.enable_systray.unwrap().to_variant())
+            .activate(
+                move |window: &adw::ApplicationWindow, action: &gio::SimpleAction, _| {
+                    let state = action.state().unwrap();
+                    let action_state: bool = state.get().unwrap();
+                    let new_state = !action_state; // toggle
+                    action.set_state(&new_state.to_variant());
+
+                    let ctx_systray_handle = ctx_systray_handle.clone();
+
+                    if new_state {
+                        Self::setup_systray(ctx_systray_handle, window.clone(), gui_tx.clone());
+                    } else {
+                        Self::unsetup_systray(ctx_systray_handle, window.clone());
+                    }
+
+                    let mut new_preference: Preferences = Preferences::new();
+                    new_preference.enable_systray = Some(new_state);
+                    gui_tx
+                        .try_send(GUIMessage::UpdatePreference(new_preference))
+                        .unwrap();
+                },
+            )
+            .build();
+
+        let gui_tx = self.gui_tx.clone();
+
+        let action_no_dupes_setting = gio::ActionEntry::builder("no-dupes-setting")
+            .state(self.old_preferences.no_duplicates.unwrap().to_variant())
+            .activate(move |_, action, _| {
+                let state = action.state().unwrap();
+                let action_state: bool = state.get().unwrap();
+                let new_state = !action_state; // toggle
+                action.set_state(&new_state.to_variant());
+
+                let mut new_preference: Preferences = Preferences::new();
+                new_preference.no_duplicates = Some(new_state);
+                gui_tx
+                    .try_send(GUIMessage::UpdatePreference(new_preference))
                     .unwrap();
             })
             .build();
@@ -1057,6 +1283,16 @@ impl App {
             })
             .build();
 
+        let microphone_tx = self.microphone_tx.clone();
+
+        let action_refresh_devices = gio::ActionEntry::builder("refresh-devices")
+            .activate(move |_, _, _| {
+                microphone_tx
+                    .try_send(MicrophoneMessage::RefreshDevices)
+                    .unwrap();
+            })
+            .build();
+
         let action_show_menu = gio::ActionEntry::builder("show-menu")
             .activate(move |_, _, _| {
                 menu_button.activate();
@@ -1073,6 +1309,10 @@ impl App {
             action_display_shortcuts,
             action_show_preferences,
             action_notification_setting,
+            #[cfg(target_os = "linux")]
+            action_systray_setting,
+            action_no_dupes_setting,
+            action_refresh_devices,
             action_close,
             action_show_menu,
         ]);
@@ -1087,8 +1327,9 @@ impl App {
 
         application.set_accels_for_action("win.close", &["<Ctrl>Q", "<Primary>W"]);
         application.set_accels_for_action("win.recognize-file", &["<Ctrl>O"]);
-        application.set_accels_for_action("win.display-shortcuts", &["<Primary>question", "<Primary>P"]);
-        application.set_accels_for_action("win.show-preferences", &["<Primary>comma", "<Primary>P"]);
+        application.set_accels_for_action("win.display-shortcuts", &["<Primary>question"]);
+        application
+            .set_accels_for_action("win.show-preferences", &["<Primary>comma", "<Primary>P"]);
         application.set_accels_for_action("win.show-menu", &["F10"]);
     }
 

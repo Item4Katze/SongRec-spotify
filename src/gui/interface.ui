@@ -125,7 +125,9 @@
                                         <property name="spacing">7</property>
                                         <child>
                                           <object class="GtkLabel" id="results_label">
+                                            <property name="ellipsize">end</property>
                                             <property name="label">Artist - Song name</property>
+                                            <property name="natural-wrap-mode">word</property>
                                             <property name="selectable">True</property>
                                             <attributes>
                                               <attribute name="weight" value="bold"/>
@@ -170,6 +172,13 @@
                             <property name="spacing">15</property>
                             <child>
                               <object class="AdwPreferencesGroup" id="input_device_section">
+                                <property name="header-suffix">
+                                  <object class="GtkButton" id="refresh_devices">
+                                    <property name="action-name">win.refresh-devices</property>
+                                    <property name="icon-name">view-refresh-symbolic</property>
+                                    <property name="tooltip-text" translatable="yes">Refresh available devices</property>
+                                  </object>
+                                </property>
                                 <property name="title" translatable="yes">Audio input</property>
                                 <property name="visible">False</property>
                                 <child>
@@ -251,9 +260,6 @@
                                               <object class="GtkSingleSelection" id="history_selection">
                                                 <property name="autoselect">False</property>
                                                 <property name="can-unselect">True</property>
-                                                <property name="model">
-                                                  <object class="GListStore" id="history_list_store"/>
-                                                </property>
                                               </object>
                                             </property>
                                             <property name="show-column-separators">True</property>
@@ -378,6 +384,7 @@
                         <property name="has-tooltip">True</property>
                         <property name="icon-name">open-menu-symbolic</property>
                         <property name="menu-model">main_menu_model</property>
+                        <property name="primary">True</property>
                         <property name="tooltip-text" translatable="yes">Application menu</property>
                       </object>
                     </child>
@@ -402,9 +409,6 @@
                           <object class="GtkSingleSelection" id="favorites_selection">
                             <property name="autoselect">False</property>
                             <property name="can-unselect">True</property>
-                            <property name="model">
-                              <object class="GListStore" id="favorites_list_store"/>
-                            </property>
                           </object>
                         </property>
                         <property name="show-column-separators">True</property>
@@ -538,6 +542,47 @@
                           </object>
                         </child>
                         <child>
+                          <object class="AdwSwitchRow" id="systray_setting">
+                            <property name="action-name">win.systray-setting</property>
+                            <property name="subtitle" translatable="yes">When closing the window, minimize to system tray using KSNI instead of closing the app. Please note that you may have to increase the "request interval" setting when leaving SongRec running in the background to reduce your changes of getting rate-limited.</property>
+                            <property name="title" translatable="yes">Minimize to system tray</property>
+                            <property name="visible">False</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwSwitchRow" id="no_dupes_setting">
+                            <property name="action-name">win.no-dupes-setting</property>
+                            <property name="subtitle" translatable="yes">Bump a song to the top of the history list and remove the former entry when the same song is detected multiple times</property>
+                            <property name="title" translatable="yes">No duplicates in history</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwPreferencesGroup" id="network_preferences">
+                        <property name="title" translatable="yes">Network preferences</property>
+                        <child>
+                          <object class="AdwSpinRow" id="interval_setting">
+                            <property name="adjustment">
+                              <object class="GtkAdjustment" id="interval_value">
+                                <property name="lower">1.0</property>
+                                <property name="page-increment">1.0</property>
+                                <property name="page-size">1.0</property>
+                                <property name="step-increment">1.0</property>
+                                <property name="upper">513.0</property>
+                                <property name="value">10.0</property>
+                                <signal name="value-changed" handler="interval_changed"/>
+                              </object>
+                            </property>
+                            <property name="climb-rate">1.0</property>
+                            <property name="numeric">True</property>
+                            <property name="snap-to-ticks">True</property>
+                            <property name="subtitle" translatable="yes">By default 8, increase if you are rate-limited</property>
+                            <property name="title" translatable="yes">Shazam interval between requests in seconds</property>
+                            <property name="update-policy">if-valid</property>
+                          </object>
+                        </child>
+                        <child>
                           <object class="AdwSpinRow" id="buffer_size_setting">
                             <property name="adjustment">
                               <object class="GtkAdjustment" id="buffer_size_value">
@@ -556,43 +601,6 @@
                             <property name="subtitle" translatable="yes">By default the last 12 seconds of music are fingerprinted and sent to Shazam. Editing may have an impact on reliability</property>
                             <property name="title" translatable="yes">Shazam buffer size in seconds</property>
                             <property name="update-policy">if-valid</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwSpinRow" id="interval_setting">
-                            <property name="adjustment">
-                              <object class="GtkAdjustment" id="interval_value">
-                                <property name="lower">1.0</property>
-                                <property name="page-increment">1.0</property>
-                                <property name="page-size">1.0</property>
-                                <property name="step-increment">1.0</property>
-                                <property name="upper">513.0</property>
-                                <property name="value">4.0</property>
-                                <signal name="value-changed" handler="interval_changed"/>
-                              </object>
-                            </property>
-                            <property name="climb-rate">1.0</property>
-                            <property name="numeric">True</property>
-                            <property name="snap-to-ticks">True</property>
-                            <property name="subtitle" translatable="yes">By default 4, increase if you are rate-limited</property>
-                            <property name="title" translatable="yes">Shazam interval between requests in seconds</property>
-                            <property name="update-policy">if-valid</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwSwitchRow" id="systray_setting">
-                            <property name="action-name">win.systray-setting</property>
-                            <property name="subtitle" translatable="yes">When closing the window, minimize to system tray using libayatana-appindicator instead of closing the app. Please note that you should increate the "request interval" setting when leaving SongRec running in the background to reduce your changes of getting rate-limited.</property>
-                            <property name="title" translatable="yes">Minimize to system tray</property>
-                            <property name="visible">False</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwSwitchRow" id="no_dupes_setting">
-                            <property name="action-name">win.no-dupes-setting</property>
-                            <property name="subtitle" translatable="yes">Bump a song to the top of the history list and remove the former entry when the same song is detected multiple times</property>
-                            <property name="title" translatable="yes">No duplicates in history</property>
-                            <property name="visible">False</property>
                           </object>
                         </child>
                       </object>
@@ -639,7 +647,7 @@
       </item>
       <item>
         <attribute name="action">navigation.push</attribute>
-        <attribute name="label">_Preferences...</attribute>
+        <attribute name="label" translatable="yes">_Preferences...</attribute>
         <attribute name="target">settings_tag</attribute>
       </item>
     </section>
@@ -658,9 +666,9 @@
 Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
     <property name="issue-url">https://github.com/marin-m/SongRec/issues</property>
     <property name="license-type">gpl-3-0</property>
-    <property name="support-url">https://matrix.to/#/!DZgyxHTQHSssuGdiHl:matrix.org</property>
-    <property name="translator-credits">SongRec translators https://github.com/marin-m/SongRec/tree/master/translations&gt;</property>
-    <property name="version">0.6.2</property>
+    <property name="support-url">https://matrix.to/#/#songrec:matrix.org</property>
+    <property name="translator-credits">SongRec translators https://github.com/marin-m/SongRec/tree/main/translations&gt;</property>
+    <property name="version">0.6.4</property>
     <property name="visible">False</property>
     <property name="website">https://songrec.fossplant.re/</property>
     <signal name="closed" handler="about_dialog_closed"/>
@@ -713,6 +721,11 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
     </section>
     <section>
       <item>
+        <attribute name="action">history-menu.remove-from-history</attribute>
+        <attribute name="icon">edit-delete-symbolic</attribute>
+        <attribute name="label" translatable="yes">Delete from History</attribute>
+      </item>
+      <item>
         <attribute name="action">history-menu.add-to-favorites</attribute>
         <attribute name="icon">favorite-new-symbolic</attribute>
         <attribute name="label" translatable="yes">Add to Favorites</attribute>
@@ -756,15 +769,6 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
         <attribute name="label" translatable="yes">Remove from Favorites</attribute>
       </item>
     </section>
-  </menu>
-  <menu id="app_indicator_menu">
-    <item>
-      <attribute name="action">win.open-window</attribute>
-      <attribute name="label" translatable="yes">Open SongRec</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Quit...</attribute>
-    </item>
   </menu>
   <object class="GtkShortcutsWindow" id="shortcuts_window">
     <property name="child">
@@ -818,4 +822,6 @@ Contributors https://github.com/marin-m/SongRec/graphs/contributors</property>
     <property name="modal">True</property>
     <property name="transient-for">main_window</property>
   </object>
+  <object class="GListStore" id="history_list_store"/>
+  <object class="GListStore" id="favorites_list_store"/>
 </interface>

@@ -4,16 +4,12 @@ This directory contains a script that will build a Flatpak package for `SongRec`
 
 ## Build instructions
 
-In order to get a recent Flatpak and Flatpak-Builder version with Ubuntu Bionic (Flatpak-Builder 0.x won't correctly parse our Flatpak manifest), be sure to run:
+Build dependencies:
 
 ```
-sudo add-apt-repository --yes --update ppa:alexlarsson/flatpak
-sudo apt-get install flatpak-builder flatpak
-```
-Also install other build dependencies:
-
-```bash
-sudo apt install build-essential libasound2-dev libgtk-3-dev libssl-dev git cargo
+sudo apt install flatpak-builder flatpak build-essential libasound2-dev \
+    libpulse-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev \
+    intltool appstream git cargo
 ```
 
 Then, run:

@@ -1,6 +1,6 @@
 # Windows cross-compilation
 
-This files gives commands that seem to work in order to cross-compile this application for Windows under Linux.
+This files gives commands that seem to work in order to cross-compile this application for Windows under Linux (this is outdated).
 
 The following references have been used:
 * https://stackoverflow.com/questions/31492799/cross-compile-a-rust-application-from-linux-to-windows
@@ -9,7 +9,7 @@ The following references have been used:
 * https://stackoverflow.com/questions/45444811/how-to-compiling-c-gtk3-program-in-linux-mint-for-windows
 
 ```console-session
-sudo apt install mingw-w64-tools rpm2cpio binutils-mingw-w64-x86-64 wget zip libz-mingw-w64-dev win-iconv-mingw-w64-dev libgtk-3-dev p7zip-full wine64 upx-ucl
+sudo apt install mingw-w64-tools rpm2cpio binutils-mingw-w64-x86-64 wget zip libz-mingw-w64-dev win-iconv-mingw-w64-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev p7zip-full wine64 upx-ucl
 
 sudo mkdir /opt/gtkwin
 cd /opt/gtkwin

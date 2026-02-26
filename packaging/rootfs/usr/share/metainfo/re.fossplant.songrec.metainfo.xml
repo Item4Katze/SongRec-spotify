@@ -48,9 +48,9 @@
   </recommends>
   <url type="bugtracker">https://github.com/marin-m/SongRec/issues</url>
   <url type="homepage">https://songrec.fossplant.re/</url>
-  <url type="contact">https://matrix.to/#/!DZgyxHTQHSssuGdiHl:matrix.org</url>
+  <url type="contact">https://matrix.to/#/#songrec:matrix.org</url>
   <url type="faq">https://github.com/marin-m/SongRec#readme</url>
-  <url type="translate">https://github.com/marin-m/SongRec/tree/master/translations#readme</url>
+  <url type="translate">https://github.com/marin-m/SongRec/tree/main/translations#readme</url>
   <url type="vcs-browser">https://github.com/marin-m/SongRec</url>
 <!--
 Open Age Rating Service
@@ -58,6 +58,31 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.6.4" date="2026-02-19">
+      <description>
+        <p>Add an UI button to refresh the PulseAudio device list</p>
+        <p>Add a status icon through the KSNI rust crate</p>
+        <p>Add a no duplicate entries setting (issue #198)</p>
+        <p>Set the default request interval to a tunable 8 seconds</p>
+        <p>Don't try to fingerprint empty audio buffers</p>
+        <p>Fix a display glitch</p>
+      </description>
+    </release>
+    <release version="0.6.3" date="2026-02-18">
+      <description>
+        <p>Reduce song history load time when the history is large (issue #224)</p>
+        <p>Drop reqwest for libsoup for network requests, this will make the binary and the compile time smaller</p>
+        <p>Make the network code asynchronous (issue #223)</p>
+        <p>Increase the default request interval from 4 to 10 seconds to decrease the odds of rate-limiting, and make it fully configurable (issues #222, #154, #164, #218)</p>
+        <p>Try a colorful icon</p>
+        <p>Implement more standard shortcuts for GNOME Circle criteria compliance</p>
+        <p>Add Snapcraft compatibility</p>
+        <p>Move command line output to the new fern-based logging system</p>
+        <p>Add a --list-devices flag for CLI commands like "listen" and "recognize"</p>
+        <p>Add a --request-interval flag for CLI commands like "listen" and "recognize"</p>
+        <p>Avoid to spam the debugging output with huge raw song cover data</p>
+      </description>
+    </release>
     <release version="0.6.2" date="2026-02-15">
       <description>
         <p>Avoid stack overflow when compiling in debug mode on Linux</p>
