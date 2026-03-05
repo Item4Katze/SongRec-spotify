@@ -1,3 +1,4 @@
+use log::debug;
 use std::fs;
 use std::panic;
 use std::sync::Arc;
@@ -9,6 +10,7 @@ use std::sync::Arc;
 use mpris_player::{Metadata, MprisPlayer, PlaybackStatus};
 
 use crate::core::thread_messages::SongRecognizedMessage;
+use crate::utils::filesystem_operations::obtain_cache_directory;
 use std::os::unix::fs::MetadataExt;
 use std::time::SystemTime;
 
@@ -87,7 +89,8 @@ pub fn update_song(
         let process_uid = std::fs::metadata("/proc/self")
             .map(|m| m.uid())
             .unwrap_or(0);
-        let mut tmp = std::env::temp_dir();
+        // TODO use cache dir
+        let mut tmp = obtain_cache_directory().unwrap();
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
@@ -96,6 +99,7 @@ pub fn update_song(
             "songrec_cover_{}_{}.{}",
             process_uid, timestamp, mime_ext
         ));
+        debug!("Writing cover file to {:?}", tmp);
         if fs::write(&tmp, buf).is_ok() {
             // Use file:// URL for better compatibility with MPRIS clients
             metadata.art_url = Some(format!("file://{}", tmp.display()));

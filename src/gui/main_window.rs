@@ -26,7 +26,7 @@ use crate::plugins::ksni::SystrayInterface;
 use crate::plugins::mpris_player::{get_player, update_song};
 use crate::utils::csv_song_history::SongHistoryRecord;
 use crate::utils::filesystem_operations::{
-    obtain_favorites_csv_path, obtain_recognition_history_csv_path,
+    clear_cache, obtain_favorites_csv_path, obtain_recognition_history_csv_path,
 };
 
 use crate::gui::preferences::{Preferences, PreferencesInterface};
@@ -89,13 +89,6 @@ impl App {
             _ => "re.fossplant.songrec",
         }));
         Self::load_resources();
-
-        gtk::init().unwrap();
-
-        if let Some(display) = gdk::Display::default() {
-            let icon_theme = gtk::IconTheme::for_display(&display);
-            icon_theme.add_resource_path("/re/fossplant/songrec/");
-        }
 
         let builder = gtk::Builder::new();
 
@@ -179,6 +172,16 @@ impl App {
     fn load_resources() {
         gio::resources_register_include!("compiled.gresource")
             .expect("Failed to register resources.");
+
+        gtk::init().unwrap();
+
+        if let Some(display) = gdk::Display::default() {
+            let icon_theme = gtk::IconTheme::for_display(&display);
+            icon_theme.add_resource_path("/re/fossplant/songrec/");
+        }
+
+        let css_theme = gtk::CssProvider::new();
+        css_theme.load_from_resource("/re/fossplant/songrec/style.css");
     }
 
     fn run(self, set_recording: bool, enable_mpris_cli: bool, input_file: Option<String>) {
@@ -281,6 +284,7 @@ impl App {
         set_recording: bool,
         enable_mpris_cli: bool,
     ) {
+        clear_cache();
         self.setup_intercom(application, set_recording, enable_mpris_cli);
         self.setup_actions(application, enable_mpris_cli);
         #[cfg(target_os = "linux")]
@@ -727,8 +731,13 @@ impl App {
                                 && (microphone_switch.is_active() || loopback_switch.is_active()))
                             {
                                 error!("Displaying error: {}", string);
-                                let dialog = gtk::AlertDialog::builder().message(&string).build();
-                                dialog.show(Some(&window));
+                                let dialog = adw::AlertDialog::builder()
+                                    .body(&string)
+                                    .close_response("ok")
+                                    .default_response("ok")
+                                    .build();
+                                dialog.add_responses(&[("ok", &gettext("_Ok"))]);
+                                glib::spawn_future_local(dialog.choose_future(Some(&window)));
 
                                 if string != gettext("No match for this song") {
                                     Self::notify_application_error(
@@ -957,19 +966,23 @@ impl App {
                         }
 
                         WipeSongHistory => {
-                            let dialog = gtk::AlertDialog::builder()
-                                .message(&gettext("Are you sure you want to wipe history?"))
-                                .buttons(vec![gettext("_Yes"), gettext("_No")])
-                                .default_button(0)
-                                .cancel_button(1)
+                            let dialog = adw::AlertDialog::builder()
+                                .body(&gettext("Are you sure you want to wipe history?"))
+                                .default_response("yes")
+                                .close_response("no")
                                 .build();
+
+                            dialog.add_responses(&[
+                                ("yes", &gettext("_Yes")),
+                                ("no", &gettext("_No")),
+                            ]);
 
                             let song_history_interface = song_history_interface.clone();
                             dialog.choose(
                                 Some(&window),
                                 None::<&gio::Cancellable>,
                                 move |result| {
-                                    if result == Ok(0) {
+                                    if result == "yes" {
                                         song_history_interface.borrow_mut().wipe_and_save();
                                     }
                                 },

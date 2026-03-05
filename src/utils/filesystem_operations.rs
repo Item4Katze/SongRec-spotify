@@ -60,6 +60,33 @@ fn obtain_preferences_directory(project_directory: ProjectDirs) -> Result<PathBu
     Ok(preferences_dir.to_path_buf())
 }
 
+pub fn obtain_cache_directory() -> Result<PathBuf, Box<dyn Error>> {
+    let project_dir =
+        ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).ok_or("No valid path")?;
+    let cache_path = project_dir.cache_dir();
+    if !cache_path.exists() {
+        create_dir_all(cache_path)?;
+    }
+    Ok(cache_path.to_path_buf())
+}
+
+pub fn clear_cache() {
+    if let Ok(contents) = std::fs::read_dir(obtain_cache_directory().unwrap()) {
+        for entry in contents {
+            if let Ok(entry) = entry {
+                if entry
+                    .file_name()
+                    .to_str()
+                    .unwrap_or("")
+                    .starts_with("songrec_cover_")
+                {
+                    std::fs::remove_file(entry.path()).ok();
+                }
+            }
+        }
+    }
+}
+
 //Backwards compatibility
 fn get_old_data_dir_path() -> Result<PathBuf, Box<dyn Error>> {
     let app_info = AppInfo {
