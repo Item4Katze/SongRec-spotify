@@ -14,6 +14,7 @@ mod core {
     pub mod http_task;
     pub mod logging;
     pub mod microphone_thread;
+    pub mod preferences;
     pub mod processing_thread;
     pub mod thread_messages;
 }
@@ -28,7 +29,6 @@ mod audio_controllers {
 #[cfg(feature = "gui")]
 mod gui {
     pub mod main_window;
-    pub mod preferences;
     pub mod song_history_interface;
 
     pub mod context_menu;
@@ -38,10 +38,8 @@ mod gui {
 
 mod utils {
     pub mod csv_song_history;
-    pub mod internationalization;
-
-    #[cfg(feature = "gui")]
     pub mod filesystem_operations;
+    pub mod internationalization;
 
     #[cfg(feature = "ffmpeg")]
     pub mod ffmpeg_wrapper;
@@ -67,6 +65,7 @@ use crate::utils::internationalization::setup_internationalization;
 
 use clap::{command, Arg, ArgAction, Command};
 use gettextrs::gettext;
+use log::debug;
 use soup::prelude::SessionExt;
 use std::error::Error;
 
@@ -298,11 +297,12 @@ macro_rules! app {
 fn main() -> Result<(), Box<dyn Error>> {
     // Set up the translation/internationalization part
 
-    setup_internationalization();
+    let i18n_folder = setup_internationalization();
 
     // TODO simplify the code in this module etc. path handling ^
 
     // Collect the program arguments
+
     let args = app!().get_matches();
 
     // Set up logging
@@ -315,6 +315,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     Logging::bind_glib_logging();
+
+    match i18n_folder {
+        Some(path) => {
+            debug!("Translations folder found at: {}", path.to_str().unwrap());
+        }
+        None => {
+            debug!("Translations folder set to system default");
+        }
+    };
 
     // Parse other arguments
 

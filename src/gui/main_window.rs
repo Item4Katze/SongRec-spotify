@@ -29,7 +29,7 @@ use crate::utils::filesystem_operations::{
     clear_cache, obtain_favorites_csv_path, obtain_recognition_history_csv_path,
 };
 
-use crate::gui::preferences::{Preferences, PreferencesInterface};
+use crate::core::preferences::{Preferences, PreferencesInterface};
 
 use crate::gui::context_menu::ContextMenuUtil;
 use crate::gui::history_entry::HistoryEntry;
@@ -90,6 +90,26 @@ impl App {
         }));
         Self::load_resources();
 
+        let ctx_selected_item: Rc<RefCell<Option<HistoryEntry>>> = Rc::new(RefCell::new(None));
+        let ctx_buffered_log: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
+        let ctx_logger_source_id: Rc<RefCell<Option<glib::source::SourceId>>> =
+            Rc::new(RefCell::new(None));
+
+        let history_list_store: gio::ListStore = gio::ListStore::new::<HistoryEntry>();
+        let song_history_interface = Rc::new(RefCell::new(
+            RecognitionHistoryInterface::new(
+                history_list_store.clone(),
+                obtain_recognition_history_csv_path,
+            )
+            .unwrap(),
+        ));
+
+        let favorites_list_store = gio::ListStore::new::<HistoryEntry>();
+        let favorites_interface = Rc::new(RefCell::new(
+            FavoritesInterface::new(favorites_list_store.clone(), obtain_favorites_csv_path)
+                .unwrap(),
+        ));
+
         let builder = gtk::Builder::new();
 
         let builder_scope = gtk::BuilderRustScope::new();
@@ -101,37 +121,19 @@ impl App {
             gui_tx.clone(),
             builder.clone(),
             builder_scope,
+            favorites_interface.clone(),
+            ctx_selected_item.clone(),
         );
         builder
             .add_from_resource("/re/fossplant/songrec/interface.ui")
             .unwrap();
 
-        let history_list_store: gio::ListStore = builder.object("history_list_store").unwrap();
-        let song_history_interface = Rc::new(RefCell::new(
-            RecognitionHistoryInterface::new(
-                history_list_store.clone(),
-                obtain_recognition_history_csv_path,
-            )
-            .unwrap(),
-        ));
-
         let history_selection: gtk::SingleSelection = builder.object("history_selection").unwrap();
         history_selection.set_model(Some(&history_list_store));
-
-        let favorites_list_store: gio::ListStore = builder.object("favorites_list_store").unwrap();
-        let favorites_interface = Rc::new(RefCell::new(
-            FavoritesInterface::new(favorites_list_store.clone(), obtain_favorites_csv_path)
-                .unwrap(),
-        ));
 
         let favorites_selection: gtk::SingleSelection =
             builder.object("favorites_selection").unwrap();
         favorites_selection.set_model(Some(&favorites_list_store));
-
-        let ctx_selected_item: Rc<RefCell<Option<HistoryEntry>>> = Rc::new(RefCell::new(None));
-        let ctx_buffered_log: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
-        let ctx_logger_source_id: Rc<RefCell<Option<glib::source::SourceId>>> =
-            Rc::new(RefCell::new(None));
 
         let preferences_interface: PreferencesInterface = PreferencesInterface::new();
         let old_preferences: Preferences = preferences_interface.preferences.clone();
@@ -338,7 +340,7 @@ impl App {
     }
 
     fn setup_context_menus(&self) {
-        ContextMenuUtil::connect_menu(
+        ContextMenuUtil::connect_menu_key_actions(
             self.builder.clone(),
             self.builder.object("history_view").unwrap(),
             self.builder.object("history_context_menu").unwrap(),
@@ -346,7 +348,7 @@ impl App {
             self.favorites_interface.clone(),
         );
 
-        ContextMenuUtil::connect_menu(
+        ContextMenuUtil::connect_menu_key_actions(
             self.builder.clone(),
             self.builder.object("favorites_view").unwrap(),
             self.builder.object("history_context_menu").unwrap(),
@@ -372,8 +374,60 @@ impl App {
         gui_tx_shared: async_channel::Sender<GUIMessage>,
         builder_shared: gtk::Builder,
         builder_scope: gtk::BuilderRustScope,
+        favorites: Rc<RefCell<FavoritesInterface>>,
+        ctx_selected_item: Rc<RefCell<Option<HistoryEntry>>>,
     ) {
         let microphone_tx = microphone_tx_shared.clone();
+        let builder = builder_shared.clone();
+
+        builder_scope.add_callback("history_cell_setup_cb", move |values| {
+            let popover_menu: gtk::PopoverMenu = builder.object("history_context_menu").unwrap();
+
+            let builder = builder.clone();
+            let favorites = favorites.clone();
+            let ctx_selected_item = ctx_selected_item.clone();
+
+            let cell = values[1].get::<gtk::ColumnViewCell>().unwrap();
+            /* let column_view = values[0]
+            .get::<gtk::ColumnViewColumn>()
+            .unwrap()
+            .column_view()
+            .unwrap(); */
+
+            let label = gtk::Label::new(None);
+            label.set_xalign(0.0);
+            label.add_css_class("cell_label");
+            cell.set_child(Some(&label));
+
+            ContextMenuUtil::connect_menu_mouse_actions(
+                builder,
+                cell,
+                label,
+                popover_menu,
+                ctx_selected_item,
+                favorites,
+            );
+
+            None
+        });
+
+        builder_scope.add_callback("history_cell_bind_cb", move |values| {
+            let col = values[0].get::<gtk::ColumnViewColumn>().unwrap();
+            let cell = values[1].get::<gtk::ColumnViewCell>().unwrap();
+            let label = cell.child().unwrap().downcast::<gtk::Label>().unwrap();
+            let entry = cell.item().unwrap().downcast::<HistoryEntry>().unwrap();
+            let prop_name = col.id().unwrap();
+
+            let text = match prop_name.as_str() {
+                "song_name" => entry.song_name(),
+                "album" => entry.album().unwrap_or(String::new()),
+                "recognition_date" => entry.recognition_date(),
+                _ => unreachable!(),
+            };
+            label.set_text(&text);
+            None
+        });
+
         let builder = builder_shared.clone();
 
         builder_scope.add_callback("loopback_options_switched", move |_values| {
@@ -583,11 +637,18 @@ impl App {
         // + https://gtk-rs.org/gtk4-rs/stable/latest/book/main_event_loop.html#how-to-avoid-blocking-the-main-loop
 
         let microphone_rx = self.microphone_rx.clone();
+        let microphone_tx = self.microphone_tx.clone();
         let processing_tx = self.processing_tx.clone();
         let gui_tx = self.gui_tx.clone();
         let preferences_interface = self.preferences_interface.clone();
         spawn_big_thread(move || {
-            microphone_thread(microphone_rx, processing_tx, gui_tx, preferences_interface);
+            microphone_thread(
+                microphone_rx,
+                microphone_tx,
+                processing_tx,
+                gui_tx,
+                preferences_interface,
+            );
         });
 
         let processing_rx = self.processing_rx.clone();
@@ -1338,8 +1399,8 @@ impl App {
         // GDK key names are available here:
         // https://gitlab.gnome.org/GNOME/gtk/-/blob/main/gdk/gdkkeysyms.h
 
-        application.set_accels_for_action("win.close", &["<Ctrl>Q", "<Primary>W"]);
-        application.set_accels_for_action("win.recognize-file", &["<Ctrl>O"]);
+        application.set_accels_for_action("win.close", &["<Primary>Q", "<Primary>W"]);
+        application.set_accels_for_action("win.recognize-file", &["<Primary>O"]);
         application.set_accels_for_action("win.display-shortcuts", &["<Primary>question"]);
         application
             .set_accels_for_action("win.show-preferences", &["<Primary>comma", "<Primary>P"]);

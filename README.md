@@ -36,19 +36,13 @@ sudo pacman -S songrec
 songrec
 ```
 
-Using apt with PPA (Ubuntu, supported from 24.04 LTS up to the current 25.10):
+Using apt with PPA (Ubuntu, recommended):
 
 ```bash
 wget -qO- 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6888550b2fc77d09' | sudo tee /etc/apt/trusted.gpg.d/songrec.asc
 sudo apt-add-repository ppa:marin-m/songrec -y -u
 sudo apt install songrec -y
 songrec
-```
-
-Using app with Snapcraft (all Ubuntu versions):
-
-```bash
-sudo snap install songrec
 ```
 
 Using Flatpak (all distributions) (NOTE: with Flatpak, the GUI should work fine but some of the CLI features may not be usable due to filesystem sandboxing restrictions):
@@ -67,7 +61,7 @@ sudo apt install cargo rustc -y
 echo 'export PATH="$HOME/.cargo/bin:$PATH"' | tee -a ~/.profile ~/.bashrc
 source ~/.bashrc
 
-sudo apt install build-essential libasound2-dev libpulse-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev -y
+sudo apt install build-essential libasound2-dev libpipewire-0.3-dev libclang-dev libpulse-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev -y
 cargo install songrec --no-default-features -F gui,ffmpeg,pulse,mpris
 songrec
 ```
@@ -92,7 +86,7 @@ Note: You may remove dependencies over GTK+, Pulseaudio/PipeWire's libpulse or D
 
 ### Installing Rust
 
-First, you need to [install the Rust compiler and package manager](https://www.rust-lang.org/tools/install). The current minimal `rustc` required version should be at least version 1.84.
+First, you need to [install the Rust compiler and package manager](https://www.rust-lang.org/tools/install). The current minimal `rustc` required version should be at least version 1.87.
 
 You can either install Rust from the repositories, for example using Ubuntu/Debian:
 
@@ -122,26 +116,26 @@ rustup update
 Debian:
 
 ```bash
-sudo apt install build-essential libasound2-dev libpulse-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev intltool
+sudo apt install build-essential libasound2-dev libpipewire-0.3-dev libclang-dev libpulse-dev libgtk-4-dev libsoup-3.0-dev libadwaita-1-dev libdbus-1-dev intltool
 ```
 
 Void Linux (libressl):
 
 ```shell
-sudo xbps-install base-devel alsa-lib-devel pulseaudio-devel gtk4-devel libsoup3-devel libadwaita-devel dbus-devel libressl-devel intltool
+sudo xbps-install base-devel alsa-lib-devel pipewire-devel clang-devel pulseaudio-devel gtk4-devel libsoup3-devel libadwaita-devel dbus-devel libressl-devel intltool
 ```
 
 Void Linux (openssl):
 
 ```shell
-sudo xbps-install base-devel alsa-lib-devel pulseaudio-devel gtk4-devel libsoup3-devel libadwaita-devel dbus-devel openssl-devel intltool
+sudo xbps-install base-devel alsa-lib-devel pipewire-devel clang-devel pulseaudio-devel gtk4-devel libsoup3-devel libadwaita-devel dbus-devel openssl-devel intltool
 ```
 
 Fedora Linux:
 
 ```shell
 sudo dnf groupinstall "Development Tools"
-sudo dnf install alsa-lib-devel pulseaudio-libs-devel pkgconf-pkg-config glib gtk4-devel libsoup3-devel libadwaita-devel dbus-devel openssl-devel
+sudo dnf install alsa-lib-devel pipewire-devel clang-devel pulseaudio-libs-devel pkgconf-pkg-config glib gtk4-devel libsoup3-devel libadwaita-devel dbus-devel openssl-devel
 ```
 
 ### Compiling the project
@@ -172,7 +166,7 @@ git clone https://github.com/marin-m/songrec
 cd songrec
 snapcraft pack
 sudo snap remove --purge songrec
-sudo snap install --dangerous songrec_0.6.4_amd64.snap
+sudo snap install --dangerous songrec_*.snap
 sudo snap connect songrec:audio-record :audio-record
 songrec
 ```

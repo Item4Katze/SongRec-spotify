@@ -1,12 +1,16 @@
+use std::iter::Copied;
+use std::num::NonZero;
+use std::slice::Iter;
 use std::sync::{Arc, Mutex};
 
+use crate::core::preferences::PreferencesInterface;
 use crate::core::thread_messages::{MicrophoneMessage::*, *};
-use crate::gui::preferences::PreferencesInterface;
 
 use cpal::platform::Device;
 use cpal::traits::{DeviceTrait, StreamTrait};
-use cpal::FromSample;
 use gettextrs::gettext;
+use rodio::conversions::SampleTypeConverter;
+use rodio::nz;
 
 use crate::audio_controllers::audio_backend::get_any_backend;
 
@@ -14,12 +18,17 @@ const MAX_BUFFER_SIZE: usize = 512;
 
 pub fn microphone_thread(
     microphone_rx: async_channel::Receiver<MicrophoneMessage>,
+    microphone_tx: async_channel::Sender<MicrophoneMessage>,
     processing_tx: async_channel::Sender<ProcessingMessage>,
     gui_tx: async_channel::Sender<GUIMessage>,
     preferences_interface: Arc<Mutex<PreferencesInterface>>,
 ) {
     // Use the default host for working with audio devices.
 
+    // #[cfg(target_os = "linux")]
+    // let host = cpal::host_from_id(cpal::HostId::PipeWire).unwrap_or(cpal::default_host());
+
+    // #[cfg(not(target_os = "linux"))]
     let host = cpal::default_host();
 
     let mut backend = get_any_backend();
@@ -84,100 +93,128 @@ pub fn microphone_thread(
                 let channels = config.channels();
                 let sample_rate = config.sample_rate();
 
-                let mut twelve_seconds_buffer: Vec<i16> = vec![0i16; 16000 * MAX_BUFFER_SIZE];
+                let mut twelve_seconds_buffer: Vec<f32> = vec![0.0f32; 16000 * MAX_BUFFER_SIZE];
                 let mut number_unprocessed_samples: usize = 0; // Sample count for the interval of doing Shazam recognition (every 4 seconds)
                 let mut number_unmeasured_samples: usize = 0; // Sample count for doing volume measurement (every 24th of second)
 
                 let processing_already_ongoing_2 = processing_already_ongoing.clone();
 
                 let preferences_interface = preferences_interface.clone();
-                stream = Some(match config.sample_format() {
-                    cpal::SampleFormat::F32 => match device.build_input_stream(
-                        &config.into(),
-                        move |data, _: &_| {
-                            write_data::<f32, f32>(
-                                data,
-                                &processing_tx_2,
-                                gui_tx_3.clone(),
-                                channels,
-                                sample_rate,
-                                &mut twelve_seconds_buffer,
-                                &mut number_unprocessed_samples,
-                                &mut number_unmeasured_samples,
-                                &processing_already_ongoing_2,
-                                &preferences_interface,
-                            )
-                        },
-                        err_fn_cb,
-                        None,
-                    ) {
-                        Ok(res) => res,
-                        Err(err) => {
-                            err_fn_3(Box::new(err));
-                            return;
+                macro_rules! build_input_streams {
+                    ($($sample_format:tt, $generic:ty);+) => {
+                        match config.sample_format() {
+
+                            // See https://github.com/RustAudio/rodio/blob/a352fb53846b47523d828b276b6d625f251aabb2/src/microphone.rs#L280
+                            // See https://dev.to/sgchris/returning-iterators-from-functions-4cbh
+
+                            cpal::SampleFormat::F32 => match device.build_input_stream(
+                                &config.into(),
+                                move |data, _: &_| {
+                                    write_data(
+                                        data.into_iter().copied().collect(),
+                                        &processing_tx_2,
+                                        gui_tx_3.clone(),
+                                        channels,
+                                        sample_rate,
+                                        &mut twelve_seconds_buffer,
+                                        &mut number_unprocessed_samples,
+                                        &mut number_unmeasured_samples,
+                                        &processing_already_ongoing_2,
+                                        &preferences_interface,
+                                    )
+                                },
+                                err_fn_cb,
+                                None,
+                            ) {
+                                Ok(res) => {
+                                    // Re-call the function in the case the backend is PulseBackend,
+                                    // because we may have appeared in the list of PulseAudio's
+                                    // source outputs now
+                                    let microphone_tx = microphone_tx.clone();
+                                    let device_name = device_name.clone();
+                                    glib::source::timeout_add_once(std::time::Duration::from_millis(50), move || {
+                                        microphone_tx
+                                            .try_send(MicrophoneMessage::MicrophoneRecordSetDevice(
+                                                device_name
+                                            ))
+                                            .unwrap();
+                                    });
+
+                                    res
+                                },
+                                Err(err) => {
+                                    err_fn_3(Box::new(err));
+                                    return;
+                                }
+                            },
+                            $(
+                                cpal::SampleFormat::$sample_format => match device.build_input_stream(
+                                    &config.into(),
+                                    move |data, _: &_| {
+                                        write_data(
+                                            SampleTypeConverter::<Copied<Iter<$generic>>, f32>::new(data.into_iter().copied()).collect(),
+                                            &processing_tx_2,
+                                            gui_tx_3.clone(),
+                                            channels,
+                                            sample_rate,
+                                            &mut twelve_seconds_buffer,
+                                            &mut number_unprocessed_samples,
+                                            &mut number_unmeasured_samples,
+                                            &processing_already_ongoing_2,
+                                            &preferences_interface,
+                                        )
+                                    },
+                                    err_fn_cb,
+                                    None,
+                                ) {
+                                    Ok(res) => {
+                                        // Re-call the function in the case the backend is PulseBackend,
+                                        // because we may have appeared in the list of PulseAudio's
+                                        // source outputs now
+                                        let microphone_tx = microphone_tx.clone();
+                                        let device_name = device_name.clone();
+                                        glib::source::timeout_add_once(std::time::Duration::from_millis(50), move || {
+                                            microphone_tx
+                                                .try_send(MicrophoneMessage::MicrophoneRecordSetDevice(
+                                                    device_name
+                                                ))
+                                                .unwrap();
+                                        });
+
+                                        res
+                                    },
+                                    Err(err) => {
+                                        err_fn_3(Box::new(err));
+                                        return;
+                                    }
+                                },
+                            )+
+                            _ => unreachable!(),
                         }
-                    },
-                    cpal::SampleFormat::I16 => match device.build_input_stream(
-                        &config.into(),
-                        move |data, _: &_| {
-                            write_data::<i16, i16>(
-                                data,
-                                &processing_tx_2,
-                                gui_tx_3.clone(),
-                                channels,
-                                sample_rate,
-                                &mut twelve_seconds_buffer,
-                                &mut number_unprocessed_samples,
-                                &mut number_unmeasured_samples,
-                                &processing_already_ongoing_2,
-                                &preferences_interface,
-                            )
-                        },
-                        err_fn_cb,
-                        None,
-                    ) {
-                        Ok(res) => res,
-                        Err(err) => {
-                            err_fn_3(Box::new(err));
-                            return;
-                        }
-                    },
-                    cpal::SampleFormat::U16 => match device.build_input_stream(
-                        &config.into(),
-                        move |data, _: &_| {
-                            write_data::<u16, i16>(
-                                data,
-                                &processing_tx_2,
-                                gui_tx_3.clone(),
-                                channels,
-                                sample_rate,
-                                &mut twelve_seconds_buffer,
-                                &mut number_unprocessed_samples,
-                                &mut number_unmeasured_samples,
-                                &processing_already_ongoing_2,
-                                &preferences_interface,
-                            )
-                        },
-                        err_fn_cb,
-                        None,
-                    ) {
-                        Ok(res) => res,
-                        Err(err) => {
-                            err_fn_3(Box::new(err));
-                            return;
-                        }
-                    },
-                    _ => unreachable!(),
-                });
+                    };
+                }
+
+                stream = Some(build_input_streams!(
+                    F64, f64;
+                    I8, i8;
+                    I16, i16;
+                    I24, cpal::I24;
+                    I32, i32;
+                    I64, i64;
+                    U8, u8;
+                    U16, u16;
+                    U24, cpal::U24;
+                    U32, u32;
+                    U64, u64
+                ));
 
                 stream.as_ref().unwrap().play().unwrap();
 
-                // Re-call the function in the case the backend is PulseBackend,
-                // because we may have appeared in the list of PulseAudio's
-                // source outputs now
-                backend.set_device(&host, &device_name);
-
                 gui_tx_4.try_send(GUIMessage::MicrophoneRecording).unwrap();
+            }
+
+            MicrophoneRecordSetDevice(device_name) => {
+                backend.set_device(&host, &device_name);
             }
 
             RefreshDevices => {
@@ -205,31 +242,31 @@ pub fn microphone_thread(
     }
 }
 
-fn write_data<T, U>(
-    input_samples: &[T],
+fn write_data(
+    input_samples: Vec<f32>,
     processing_tx: &async_channel::Sender<ProcessingMessage>,
     gui_tx: async_channel::Sender<GUIMessage>,
     channels: u16,
     sample_rate: u32,
-    twelve_seconds_buffer: &mut [i16],
+    twelve_seconds_buffer: &mut [f32],
     number_unprocessed_samples: &mut usize,
     number_unmeasured_samples: &mut usize,
     processing_already_ongoing: &Arc<Mutex<bool>>,
     preferences_interface: &Arc<Mutex<PreferencesInterface>>,
-) where
-    T: cpal::Sample + rodio::Sample,
-    U: cpal::Sample,
-    i16: FromSample<T>,
-{
+) {
     // Reassemble data into a 12-second buffer, and do recognition
     // every 4 seconds if the queue to "processing_tx" is empty
 
-    let input_buffer =
-        rodio::buffer::SamplesBuffer::new::<&[T]>(channels, sample_rate, input_samples);
+    let input_buffer = rodio::buffer::SamplesBuffer::new(
+        NonZero::new(channels).unwrap(),
+        NonZero::new(sample_rate).unwrap(),
+        input_samples,
+    );
 
-    let converted_file = rodio::source::UniformSourceIterator::new(input_buffer, 1, 16000);
+    let converted_file =
+        rodio::source::UniformSourceIterator::new(input_buffer, nz!(1), nz!(16000));
 
-    let raw_pcm_samples: Vec<i16> = converted_file.collect();
+    let raw_pcm_samples: Vec<f32> = converted_file.collect();
 
     let preferences = preferences_interface.lock().unwrap().preferences.clone();
     let buffer_size_secs = preferences.buffer_size_secs.unwrap() as usize;
@@ -258,7 +295,7 @@ fn write_data<T, U>(
     if *number_unprocessed_samples >= 16000 * request_interval_secs
         && *processing_already_ongoing_borrow == false
     {
-        if !twelve_seconds_buffer.iter().all(|x| *x == 0) {
+        if !twelve_seconds_buffer.iter().all(|x| *x == 0.0) {
             processing_tx
                 .try_send(ProcessingMessage::ProcessAudioSamples(Box::new(
                     twelve_seconds_buffer.to_vec(),
@@ -278,19 +315,17 @@ fn write_data<T, U>(
     *number_unmeasured_samples += raw_pcm_samples.len();
 
     if *number_unmeasured_samples >= 16000 / 24 {
-        let mut max_s16le_amplitude = 1;
+        let mut max_f32_amplitude = 0.0f32;
 
         for index in 16000 * buffer_size_secs - 16000 / 100 * 2..16000 * buffer_size_secs {
-            if twelve_seconds_buffer[index] > max_s16le_amplitude {
-                max_s16le_amplitude = twelve_seconds_buffer[index];
+            if twelve_seconds_buffer[index].abs() > max_f32_amplitude {
+                max_f32_amplitude = twelve_seconds_buffer[index].abs();
             }
         }
 
-        let max_s16le_volume_fraction = max_s16le_amplitude as f32 / 32767.0; // 32767 is the maximum value for an i16 (2**15 - 1)
-
         gui_tx
             .try_send(GUIMessage::MicrophoneVolumePercent(
-                max_s16le_volume_fraction * 100.0,
+                max_f32_amplitude * 100.0,
             ))
             .unwrap();
 

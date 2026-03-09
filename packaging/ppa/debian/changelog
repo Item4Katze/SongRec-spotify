@@ -1,3 +1,41 @@
+songrec (0.6.6) bionic; urgency=low
+
+  * Fix translations other than fr_FR not being loaded in the Flatpak build (see issue #247)
+  * Make extra Pulseaudio-related debugging output to be displayed when -v is passed, to allow troubleshoot SongRec not working on Snap with the Ubuntu 26.04+ kernel (see https://bugs.launchpad.net/ubuntu/+bug/2143654 and issue #111)
+  * Prepare supporting CPAL 0.18+ which will have libpulse and libpipewire backends (that adds dependencies in the install instructions which are not actually used for the moment)
+
+ -- Marin <marin-m@users.noreply.github.com>  Sun, 08 Mar 2026 13:25:03 +0100
+
+songrec (0.6.5+2) bionic; urgency=low
+
+  * The non-breaking space struck again :)
+
+ -- Marin <marin-m@users.noreply.github.com>  Sat, 07 Mar 2026 16:11:04 +0100
+
+songrec (0.6.5+1) bionic; urgency=low
+
+  * Fix building on questing: Rust 1.88 is available in the repositories but the 1.89 backport isn't
+
+ -- Marin <marin-m@users.noreply.github.com>  Sat, 07 Mar 2026 15:54:26 +0100
+
+songrec (0.6.5) bionic; urgency=low
+
+  * Update the Czech translation thanks to @Fjuro
+  * Update the Dutch translation thanks to @Vistaus
+  * Fix cross-platform support and building without the GUI (issue #231)
+  * Fix legacy command line support (PR #233 thanks to @bodoque-01)
+  * Update the Slovak translation (PR #237 thanks to @dodog)
+  * Update the Russian translation (PR #239 thanks to @AlexanderShad)
+  * Implement Snapcraft compatibility (issues #111 and #244)
+  * Update the Arabic translation thanks to @mu7basha
+  * Update the "rodio" dependency and make the ALSA device names look native
+  * Select history rows only after a left-click to better match the native GTK-4 behavior (issue #245)
+  * Handle the Context key and Ctrl+C key bindings when an history row is selected (issues #245 and #200)
+  * Fix supporting MPRIS over Flatpak (issue #214)
+  * Handle left-clicks on the system tray icon over KDE
+
+ -- Marin <marin-m@users.noreply.github.com>  Sat, 07 Mar 2026 15:07:22 +0100
+
 songrec (0.6.4) bionic; urgency=low
 
   * Add an UI button to refresh the PulseAudio device list

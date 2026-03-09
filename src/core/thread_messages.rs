@@ -1,6 +1,6 @@
-use crate::fingerprinting::signature_format::DecodedSignature;
 #[cfg(feature = "gui")]
-use crate::gui::preferences::Preferences;
+use crate::core::preferences::Preferences;
+use crate::fingerprinting::signature_format::DecodedSignature;
 
 use std::thread;
 
@@ -66,6 +66,7 @@ pub enum GUIMessage {
 
 pub enum MicrophoneMessage {
     MicrophoneRecordStart(String), // The argument is the audio device name
+    MicrophoneRecordSetDevice(String), // The argument is the audio device name (with an initialization delay)
     RefreshDevices,
     MicrophoneRecordStop,
     ProcessingDone,
@@ -73,7 +74,7 @@ pub enum MicrophoneMessage {
 
 pub enum ProcessingMessage {
     ProcessAudioFile(String),
-    ProcessAudioSamples(Box<Vec<i16>>), // Prefer to use heap across threads to avoid stack overflow
+    ProcessAudioSamples(Box<Vec<f32>>), // Prefer to use heap across threads to avoid stack overflow
 }
 
 pub enum HTTPMessage {
